@@ -39,7 +39,7 @@ public class InternetService {
 
 
     private final String SERVER_HOST_IP = "192.168.43.72";
-    private final int SERVER_HOST_PORT = 9500;
+    private final int SERVER_HOST_PORT = 9999;
 
     public Handler mHandler;
     private Context context;
@@ -208,16 +208,16 @@ public class InternetService {
         private final OutputStream mmOutStream;
 
         private int state;
-        private byte[] bytes_buffer;
-        private byte[]  data_buffer;
+        private String bytes_buffer;
+        private String data_buffer;
         private int data_len;
         private int received_len;
 
         private static final int FIND_HEAD = 0;
         private static final int READ_LEN = 1;
         private static final int READ_DATA = 2;
-        private static final int DONE = 3;
-        
+
+        private static final String HEAD = "GgRd:";
         
         public ConnectedThread(Socket socket) {
             mmSocket = socket;
@@ -226,8 +226,8 @@ public class InternetService {
             mConnectedThread = this;
 
             state = FIND_HEAD;
-            bytes_buffer = new byte[0];
-            data_buffer = new byte[0];
+            bytes_buffer = "";
+            data_buffer = "";
             data_len = 0;
             received_len = 0;
             try {
@@ -256,7 +256,8 @@ public class InternetService {
                 try {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
-                    handleData(buffer, bytes);
+                    String data = new String(buffer,0,bytes);
+                    handleData(data);
 
                 } catch (IOException e) {
                     popMessage("已失去连接");
@@ -290,109 +291,47 @@ public class InternetService {
             }
         }
 
-        private synchronized void handleData(byte[] data, int num) {
-            while True:
-            data = bytes_buffer + self.request.recv(1024)
+        private synchronized boolean handleData(String data) {
+            data = bytes_buffer + data;
             // 状态机 获取帧头后，将帧传送给handle_udp_data(data)处理
-            if （state == FIND_HEAD）{
-                index = data.find(HEAD)
-                if index <= -1:
-                bytes_buffer = new byte[0];
-                state = FIND_HEAD;
-                else
-                bytes_buffer = data[index + len(HEAD):];
-                state = READ_LEN;
+            if (state == FIND_HEAD){
+                int index = data.indexOf(HEAD);
+                if (index <= -1) {
+                    bytes_buffer = "";
+                    state = FIND_HEAD;
+                }
+                else {
+                    bytes_buffer = data.substring(index + HEAD.length());
+                    state = READ_LEN;
+                }
             }
             else if (state == READ_LEN) {
-                data_len = int.from_bytes(data[:4],'big');
-                bytes_buffer = data[4:];
-                data_buffer = new byte[0];
+                byte[] len_byte = data.substring(0,4).getBytes();
+                for(int i = 0; i < 4; i++){
+                    data_len = (data_len<<8) + len_byte[i];
+                }
+                bytes_buffer = data.substring(4);
+                data_buffer = "";
                 state = READ_DATA;
                 received_len = 0;
             }
             else if (state == READ_DATA) {
-                received_len = received_len + len(data);
+                received_len = received_len + data.length();
                 if (received_len<data_len) {
-                    bytes_buffer = new byte[0];
+                    bytes_buffer = "";
                     data_buffer = data_buffer + data;
                     state = READ_DATA;
                 }
                 else {
-                    bytes_buffer = data[data_len - received_len + len(data):];
-                    data_buffer = data_buffer + data[:data_len - received_len + len(data)];
+                    bytes_buffer = data.substring(data_len - received_len + data.length());
+                    data_buffer = data_buffer + data.substring(0,data_len - received_len + data.length());
                     state = FIND_HEAD;
-                    handle_udp_data(data_buffer);
-                    self.request.close();
-                    return;
+                    popMessage(data_buffer);
+                    //handle_udp_data(data_buffer);
+                    return true;
                 }
             }
-//            for (int i = 0; i < num; i++) {
-//                if (receivedflag == FLAG_END) {
-//                    if ((data[i] & 0xff) != 0x55) {
-//                        if (receivednum < mDataSize) {
-//                            try {
-//                                mData[receivednum] = 0xAA;
-//                                receivednum++;
-//                                mData[receivednum] = data[i] & 0xff;
-//                                receivednum++;
-//                            } catch (ArrayIndexOutOfBoundsException e){
-//
-//                            }
-//                        }
-//                        receivedflag = FLAG_DATA;
-//                    } else {
-//                        mHandler.obtainMessage(MESSAGE_INVALIDATE, mDataSize, 0, mData)
-//                                .sendToTarget();
-//                        receivedflag = FLAG_START1;
-//                        receivednum = 0;
-//                    }
-//                } else if (receivedflag == FLAG_DATA) {     //存储高8位
-//                    if ((data[i] & 0xff) == 0xAA)
-//                        receivedflag = FLAG_END;
-//                    else {
-//                        receivedflag = FLAG_DATA;
-//                        try {
-//                            if (receivednum < mDataSize) {
-//                                mData[receivednum] = (data[i] & 0xff);
-//                                receivednum++;
-//                            }
-//                        }catch (ArrayIndexOutOfBoundsException e){
-//
-//                        }
-//                    }
-//                }else if (receivedflag == FLAG_DATASIZE2) {
-////                    if (data[i] < 0) {
-////                        mDataSize += data[i] & 0xff + 256;
-////                    } else {
-////                        mDataSize += data[i] & 0xff;
-////                    }
-//                    mDataSize += data[i] & 0xff;
-//                    if(mDataSize >= 0) {
-//                        mData = new int[mDataSize];
-//                        receivedflag = FLAG_DATA;
-//                    } else {
-//                        receivedflag = FLAG_START1;
-//                    }
-//                } else if (receivedflag == FLAG_DATASIZE1) {
-////                    if (data[i] < 0) {
-////                        mDataSize = (data[i] & 0xff + 256)<<8;
-////                    } else {
-////                        mDataSize = (data[i] & 0xff)<<8;
-////                    }
-//                    mDataSize = (data[i] & 0xff)<<8;
-//                    receivedflag = FLAG_DATASIZE2;
-//                } else if (receivedflag == FLAG_START2) {      //第二位是 0x55
-//                    if ((data[i] & 0xff) == 0x55)
-//                        receivedflag = FLAG_DATASIZE1;
-//                    else
-//                        receivedflag = FLAG_START1;
-//                } else if (receivedflag == FLAG_START1) {      //第一位是 0xAA
-//                    if ((data[i] & 0xff) == 0xAA)
-//                        receivedflag = FLAG_START2;
-//                    else
-//                        receivedflag = FLAG_START1;
-//                }
-//            }
+            return false;
         }
     }
     public void popMessage(String string){
