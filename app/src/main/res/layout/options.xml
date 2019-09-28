@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="15dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="波形样式设置"
+            android:textSize="20sp" />
+        <TextView
+            android:id="@+id/gridX"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="x轴的网格数"
+            tools:layout_editor_absoluteX="35dp"
+            tools:layout_editor_absoluteY="0dp" />
+        <SeekBar
+            android:id="@+id/gridXSeekBar"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="10"
+            android:progress="3" />
+
+        <TextView
+            android:id="@+id/gridY"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="y轴的网格数" />
+
+        <SeekBar
+            android:id="@+id/gridYSeekBar"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="10"
+            android:progress="3" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="波形背景颜色"/>
+
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/black_style"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="黑色" />
+
+            <RadioButton
+                android:id="@+id/white_style"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="白色" />
+        </RadioGroup>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="采样设置"
+            android:textSize="20sp" />
+        <TextView
+            android:id="@+id/sample_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="采样频率：极快" />
+        <SeekBar
+            android:id="@+id/sampleTimeSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max = "3"
+            android:progress="3"/>
+
+        <TextView
+            android:id="@+id/triggerlevel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="触发电平：0V"/>
+
+        <SeekBar
+            android:id="@+id/scaleSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max = "255"
+            android:progress="127"/>
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <RadioButton
+                android:id="@+id/upward"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:checked="true"
+                android:text="上升沿" />
+
+            <RadioButton
+                android:id="@+id/downward"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="下降沿" />
+            <RadioButton
+                android:id="@+id/notrigger"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="不触发" />
+
+        </RadioGroup>
+        <TextView
+            android:id="@+id/sample_points"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="采样点数：1024"
+            />
+        <SeekBar
+            android:id="@+id/samplePointsSeekBar"
+            style="@style/Widget.AppCompat.SeekBar.Discrete"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max = "1023"
+            android:progress="1023" />
+<!--
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="触发电平"/>
+        <SeekBar
+            android:id="@+id/seekBar5"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />-->
+    </LinearLayout>
+
+
+</android.support.constraint.ConstraintLayout>
