@@ -36,10 +36,6 @@ public class MainView extends View {
     public int gridX = 4;
     public int gridY = 3;
     public int style = STYLE_BLACK;
-    public float []mTimeScale = {(float)0.056338028,(float)0.040160643,(float)0.024140021,(float)0.016038503};
-    public float mVoltageScale = (float)3.389670943;
-
-    int speed = 3;
 
      //定义GestureDetector类
     private GestureDetector mGestureDetector;
@@ -203,17 +199,17 @@ public class MainView extends View {
         canvas.drawLine(mOriginX + mContentWidth/2*mScaleX,mOriginY,
                 mOriginX + mContentWidth/2*mScaleX,mOriginY+mContentHeight*mScaleY,paint);
 
-        paint.setColor(Color.GRAY);
-        for(int i =0;i < gridX*2+1;i++){
-            float str = (float)((float)(i)/(gridX*2)*dataSize*mTimeScale[speed]);
-            canvas.drawText(String.format("%.1f",str),mOriginX+mContentWidth*mScaleX*i/(gridX*2)+mTextSize/5,
-                    mOriginY+mContentHeight/2*mScaleY-mTextSize/5,paint);
-        }
-
-        for(int i =0;i < gridY*2+1;i++){
-            canvas.drawText(""+(int)((double)(gridY-i)/(gridY*2)*MAX_VALUE*mVoltageScale),mOriginX+mContentWidth/2*mScaleX+mTextSize/5,
-                    mOriginY+mContentHeight*mScaleY*i/(gridY*2)+mTextSize,paint);
-        }
+//        paint.setColor(Color.GRAY);
+//        for(int i =0;i < gridX*2+1;i++){
+//            float str = (float)((float)(i)/(gridX*2)*dataSize*mTimeScale[speed]);
+//            canvas.drawText(String.format("%.1f",str),mOriginX+mContentWidth*mScaleX*i/(gridX*2)+mTextSize/5,
+//                    mOriginY+mContentHeight/2*mScaleY-mTextSize/5,paint);
+//        }
+//
+//        for(int i =0;i < gridY*2+1;i++){
+//            canvas.drawText(""+(int)((double)(gridY-i)/(gridY*2)*MAX_VALUE*mVoltageScale),mOriginX+mContentWidth/2*mScaleX+mTextSize/5,
+//                    mOriginY+mContentHeight*mScaleY*i/(gridY*2)+mTextSize,paint);
+//        }
     }
     void drawData(Canvas canvas) {
         Paint paint = new Paint();
@@ -283,14 +279,14 @@ public class MainView extends View {
         float mTextSize = mContentHeight/20;
         paint.setTextSize(mTextSize);
         paint.setColor(Color.GRAY);
-        try {
-            canvas.drawText(String.format("电压:%.1fV",(data[capturedX]-(float)MAX_VALUE/2)*mVoltageScale),
-                    (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*1.5),paint);
-        }catch(ArrayIndexOutOfBoundsException  e){
-            e.printStackTrace();
-        }
-        canvas.drawText(String.format("时间:%.1fms",capturedX*mTimeScale[speed]),
-                (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
+//        try {
+//            canvas.drawText(String.format("电压:%.1fV",(data[capturedX]-(float)MAX_VALUE/2)*mVoltageScale),
+//                    (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*1.5),paint);
+//        }catch(ArrayIndexOutOfBoundsException  e){
+//            e.printStackTrace();
+//        }
+//        canvas.drawText(String.format("时间:%.1fms",capturedX*mTimeScale[speed]),
+//                (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
     }
     void calculateValue(Canvas canvas){
         //峰峰值
@@ -322,21 +318,21 @@ public class MainView extends View {
         Paint paint = new Paint();
         paint.setTextSize(mTextSize);
         paint.setColor(Color.GRAY);
-        float vpp = (max - min)*mVoltageScale;
-        float vmean = (float)(sum_ave)/(dataSize)*mVoltageScale;
-        float vroot = 0;
-        try {
-            vroot = (float) Math.sqrt((float)sum_root / dataSize) * mVoltageScale;
-        }catch (ArithmeticException e){
-            e.printStackTrace();
-        }
-        canvas.drawText(String.format("峰峰值:%.1fV",vpp),(float)(mTextSize*0.5), (float)(mTextSize*1.5),paint);
-        canvas.drawText(String.format("平均值:%.1fV",vmean),(float)(mTextSize*0.5), (float)(mTextSize*3),paint);
-        canvas.drawText(String.format("方均根值:%.1fV",vroot),(float)(mTextSize*0.5), (float)(mTextSize*4.5),paint);
-        if(second_trigger>first_trigger) {
-            float freq = (float) 1000 / (second_trigger - first_trigger) / mTimeScale[speed];
-            canvas.drawText(String.format("频率:%.1fHz", freq), (float) (mTextSize * 0.5), (float) (mTextSize * 6), paint);
-        }
+//        float vpp = (max - min)*mVoltageScale;
+//        float vmean = (float)(sum_ave)/(dataSize)*mVoltageScale;
+//        float vroot = 0;
+//        try {
+//            vroot = (float) Math.sqrt((float)sum_root / dataSize) * mVoltageScale;
+//        }catch (ArithmeticException e){
+//            e.printStackTrace();
+//        }
+//        canvas.drawText(String.format("峰峰值:%.1fV",vpp),(float)(mTextSize*0.5), (float)(mTextSize*1.5),paint);
+//        canvas.drawText(String.format("平均值:%.1fV",vmean),(float)(mTextSize*0.5), (float)(mTextSize*3),paint);
+//        canvas.drawText(String.format("方均根值:%.1fV",vroot),(float)(mTextSize*0.5), (float)(mTextSize*4.5),paint);
+//        if(second_trigger>first_trigger) {
+//            float freq = (float) 1000 / (second_trigger - first_trigger) / mTimeScale[speed];
+//            canvas.drawText(String.format("频率:%.1fHz", freq), (float) (mTextSize * 0.5), (float) (mTextSize * 6), paint);
+//        }
     }
     public void setDataSize(int datasize){
         dataSize = datasize;

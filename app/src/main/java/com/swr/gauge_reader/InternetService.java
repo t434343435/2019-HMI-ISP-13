@@ -1,7 +1,6 @@
 package com.swr.gauge_reader;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -14,6 +13,8 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
@@ -45,7 +46,6 @@ public class InternetService {
     private Context context;
     public ConnectedThread mConnectedThread;
 
-    private String [] mPairedDeviceList;
 
     public InternetService(final Context context){
         //这里把接受到的字符串写进去
@@ -58,14 +58,9 @@ public class InternetService {
                         int[] Data = (int[]) msg.obj;
                         int DataSize = msg.arg1;
                         MainView view = ((MainActivity)context).mainView;
-//                        String str = "";
-//                        for(int ch:Data) {
-//                            str = str +" "+ch;
-//                        }
-//                        Log.d("swr",""+DataSize);
-                        view.setDataSize(DataSize);//data[i] & 0xff);
+                        view.setDataSize(DataSize);
                         view.data = Data;
-                        view.speed = activity.speed;
+//                        view.speed = activity.speed;
                         activity.mSaveDataButton.setEnabled(true);
                         view.invalidate();
                         break;
@@ -116,7 +111,7 @@ public class InternetService {
                             mInternetButton.setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
-                                    sendDisconnect();
+//                                    sendDisconnect();
                                     InternetService.this.mConnectedThread.cancel();
 
                                 }
@@ -156,9 +151,10 @@ public class InternetService {
         }
 
         public void run() {
-            popMessage("客户端连接中...");
+//            popMessage("客户端连接中...");
             try{
-                socket = new Socket(SERVER_HOST_IP, SERVER_HOST_PORT);
+                socket = new Socket();
+                socket.connect(new InetSocketAddress(SERVER_HOST_IP, SERVER_HOST_PORT), 2000);
             } catch (UnknownHostException e) {
                 popMessage("Unknown host exception: " + e.toString());
                 try {
@@ -183,7 +179,7 @@ public class InternetService {
                 socket = null;
             }
             if (socket != null) {
-                popMessage("连接建立成功");
+//                popMessage("连接建立成功");
 
                 new Thread(new ConnectedThread(socket)).start();
             } else {
@@ -208,8 +204,8 @@ public class InternetService {
         private final OutputStream mmOutStream;
 
         private int state;
-        private String bytes_buffer;
-        private String data_buffer;
+        private byte[] bytes_buffer;
+        private byte[] data_buffer;
         private int data_len;
         private int received_len;
 
@@ -217,8 +213,10 @@ public class InternetService {
         private static final int READ_LEN = 1;
         private static final int READ_DATA = 2;
 
-        private static final String HEAD = "GgRd:";
-        
+        private final byte[] HEAD = "GgRd:".getBytes();
+
+        private static final byte SC_DATA = (byte)0x80;
+
         public ConnectedThread(Socket socket) {
             mmSocket = socket;
             InputStream tmpIn = null;
@@ -226,8 +224,8 @@ public class InternetService {
             mConnectedThread = this;
 
             state = FIND_HEAD;
-            bytes_buffer = "";
-            data_buffer = "";
+            bytes_buffer = new byte[0];
+            data_buffer = new byte[0];
             data_len = 0;
             received_len = 0;
             try {
@@ -246,17 +244,19 @@ public class InternetService {
         }
 
         public void run() {
-            popMessage("开始建立连接线程");
+//            popMessage("开始建立连接线程");
             byte[] buffer = new byte[1024];
             int bytes;
-            // Keep listening to the InputStream while connected
-            Message msg = mHandler.obtainMessage(MESSAGE_SENDSTART);
-            mHandler.sendMessage(msg);
+            try{
+                mmOutStream.write("received".getBytes());}
+            catch (IOException e){
+
+            }
             while (mState == STATE_CONNECTED) {
                 try {
                     // Read from the InputStream
                     bytes = mmInStream.read(buffer);
-                    String data = new String(buffer,0,bytes);
+                    byte[] data = DataTransfer.BytesSub(buffer,0,bytes);
                     handleData(data);
 
                 } catch (IOException e) {
@@ -291,51 +291,71 @@ public class InternetService {
             }
         }
 
-        private synchronized boolean handleData(String data) {
-            data = bytes_buffer + data;
+        public void handleTCPPack(byte state_code,byte[] pack) {
+            switch(state_code){
+                case SC_DATA:
+                    int len = DataTransfer.Bytes2Int(DataTransfer.BytesSub(pack,0,4));
+                    for(int i = 0; i < len; i++){
+                        long capture_time =
+                                DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 8 + 4, i * 8 + 12));
+                        double value =
+                                DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 8 + 12, i * 8 + 20));
+                        popMessage("capture_time:" +  String.valueOf(capture_time));
+                        popMessage("value:" +  String.valueOf(value));
+
+                }
+                    break;
+                default:
+            }
+        }
+
+        private synchronized boolean handleData(byte[] data) {
+            data = DataTransfer.BytesConcact(bytes_buffer, data);
             // 状态机 获取帧头后，将帧传送给handle_udp_data(data)处理
-            if (state == FIND_HEAD){
-                int index = data.indexOf(HEAD);
-                if (index <= -1) {
-                    bytes_buffer = "";
-                    state = FIND_HEAD;
-                }
-                else {
-                    bytes_buffer = data.substring(index + HEAD.length());
-                    state = READ_LEN;
-                }
-            }
-            else if (state == READ_LEN) {
-                byte[] len_byte = data.substring(0,4).getBytes();
-                for(int i = 0; i < 4; i++){
-                    data_len = (data_len<<8) + len_byte[i];
-                }
-                bytes_buffer = data.substring(4);
-                data_buffer = "";
-                state = READ_DATA;
-                received_len = 0;
-            }
-            else if (state == READ_DATA) {
-                received_len = received_len + data.length();
-                if (received_len<data_len) {
-                    bytes_buffer = "";
-                    data_buffer = data_buffer + data;
+            bytes_buffer = new byte[1];
+            while(bytes_buffer.length != 0) {
+                if (state == FIND_HEAD) {
+                    int index = DataTransfer.BytesFind(data,HEAD);
+                    if (index <= -1) {
+                        bytes_buffer = new byte[0];
+                        state = FIND_HEAD;
+                    } else {
+                        bytes_buffer = DataTransfer.BytesSub(data,index + HEAD.length,data.length);
+                        data = DataTransfer.BytesSub(data,index + HEAD.length,data.length);
+                        state = READ_LEN;
+                    }
+                } else if (state == READ_LEN) {
+                    byte[] len_byte = DataTransfer.BytesSub(data,0,4);
+                    for (int i = 0; i < 4; i++) {
+                        data_len = (data_len << 8) + len_byte[i];
+                    }
+                    bytes_buffer = DataTransfer.BytesSub(data,4,data.length);
+                    data = DataTransfer.BytesSub(data,4,data.length);
+                    data_buffer = new byte[0];
                     state = READ_DATA;
-                }
-                else {
-                    bytes_buffer = data.substring(data_len - received_len + data.length());
-                    data_buffer = data_buffer + data.substring(0,data_len - received_len + data.length());
-                    state = FIND_HEAD;
-                    popMessage(data_buffer);
-                    //handle_udp_data(data_buffer);
-                    return true;
+                    received_len = 0;
+                } else if (state == READ_DATA) {
+                    received_len = received_len + data.length;
+                    if (received_len < data_len) {
+                        bytes_buffer = new byte[0];
+                        data_buffer = DataTransfer.BytesConcact(data_buffer, data);
+                        state = READ_DATA;
+                    } else {
+                        bytes_buffer = DataTransfer.BytesSub(data,data_len - received_len + data.length, data.length);
+                        data_buffer = DataTransfer.BytesConcact(data_buffer,
+                                DataTransfer.BytesSub(data,0, data_len - received_len + data.length));
+                        state = FIND_HEAD;
+                        popMessage(data_buffer.toString());
+                        cancel();
+                        handleTCPPack(data_buffer[0],DataTransfer.BytesSub(data_buffer,1,data_buffer.length));
+                        return true;
+                    }
                 }
             }
             return false;
         }
     }
     public void popMessage(String string){
-    //    Toast.makeText(context, string, Toast.LENGTH_SHORT).show();
         Message msg = mHandler.obtainMessage(MESSAGE_TOAST);
         Bundle b = new Bundle();
         b.putString("msg", string );
@@ -343,41 +363,6 @@ public class InternetService {
         mHandler.sendMessage(msg);
     }
 
-//发送0后接3个参数 1.触发电平 2.触发模式和采样速率和采样点数低2位 3.采样点数高8位
-    public void sendOptionsAndStart(int trigger,int triggermode,int rate,int points){
-        byte []mSendData = new byte[6];
-
-        mSendData[0] = (byte)0xAA;
-        mSendData[1] = (byte)0x55;
-        mSendData[2] = (byte)0x00;
-        mSendData[3] = (byte)(trigger&0xFF);
-        mSendData[4] = (byte)((points&0x03)+((rate&0x03)<<2)+((triggermode&0x03)<<4));
-        mSendData[5] = (byte)((points>>2)&0xFF);
-        write(mSendData);
-    }
-
-    public void sendCapture(){
-        byte []mSendData = new byte[3];
-        mSendData[0] = (byte)0xAA;
-        mSendData[1] = (byte)0x55;
-        mSendData[2] = (byte)0x01;
-        write(mSendData);
-    }
-
-    public void sendContinuousCapture(){
-        byte []mSendData = new byte[3];
-        mSendData[0] = (byte)0xAA;
-        mSendData[1] = (byte)0x55;
-        mSendData[2] = (byte)0x02;
-        write(mSendData);
-    }
-    public void sendDisconnect(){
-        byte []mSendData = new byte[3];
-        mSendData[0] = (byte)0xAA;
-        mSendData[1] = (byte)0x55;
-        mSendData[2] = (byte)0x03;
-        write(mSendData);
-    }
 
     private class HandleDataThread extends Thread {
         public HandleDataThread() {

@@ -28,9 +28,9 @@ import java.util.*;
 public class MainActivity extends Activity {
 
 
-    final int TRIGGER_U = 0;
-    final int TRIGGER_D = 1;
-    final int TRIGGER_N = 2;
+//    final int TRIGGER_U = 0;
+//    final int TRIGGER_D = 1;
+//    final int TRIGGER_N = 2;
 
 
     InternetService mInternetService;
@@ -44,10 +44,10 @@ public class MainActivity extends Activity {
     public Button mCaptureButton;
     public Button mOptionsButton;
 
-    int triggerLevel = 0x7F;
-    int triggerMode = TRIGGER_U;
-    int samplePoints = 1023;
-    int speed = 3;
+//    int triggerLevel = 0x7F;
+//    int triggerMode = TRIGGER_U;
+//    int samplePoints = 1023;
+//    int speed = 3;
 
     File[] files;
     ArrayList<Integer> yourChoices = new ArrayList<>();
@@ -81,7 +81,6 @@ public class MainActivity extends Activity {
         mInternetService = new InternetService(this);
         Message msg = mInternetService.mHandler.obtainMessage(InternetService.MESSAGE_UPDATEINTERNETBUTOON);
         mInternetService.mHandler.sendMessage(msg);
-
         mHelpButton = findViewById(R.id.delete_wave);
         mHelpButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -194,7 +193,7 @@ public class MainActivity extends Activity {
                             String [] ss = s.split(" ");
                             mainView.data = new int [ss.length - 1];
                             mainView.dataSize = ss.length - 1;
-                            mainView.speed = Integer.parseInt(ss[0]);
+//                            mainView.speed = Integer.parseInt(ss[0]);
                             for(int i = 0;i<ss.length-1;i++){
                                 mainView.data[i] = Integer.parseInt(ss[i+1]);
                             }
@@ -232,7 +231,7 @@ public class MainActivity extends Activity {
                     FileOutputStream mFOS = MainActivity.this.openFileOutput("wave+"+mDateString, MODE_PRIVATE);//获得FileOutputStream //////
                     //将要写入的字符串转换为byte数组
                     StringBuffer tBuffer = new StringBuffer();
-                    tBuffer.append(String.format("%d ", speed));
+//                    tBuffer.append(String.format("%d ", speed));
                     for(int val:mData){
                         tBuffer.append(String.format("%d ", val));
                     }
@@ -250,14 +249,14 @@ public class MainActivity extends Activity {
         mCaptureButton = findViewById(R.id.capture_wave);
         mCaptureButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
-                    mInternetService.sendCapture();
+//                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
+//                    mInternetService.sendCapture();
             }
         });
         mCaptureButton.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
-                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
-                    mInternetService.sendContinuousCapture();
+//                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
+//                    mInternetService.sendContinuousCapture();
                 return true;
             }
         });
@@ -274,9 +273,9 @@ public class MainActivity extends Activity {
                 // 获取EditView中的输入内容
                 tempGridX = mainView.gridX;
                 tempGridY = mainView.gridY;
-                tempPoints = samplePoints;
-                tempSpeed = speed;
-                tempTriggerLevel = triggerLevel;
+//                tempPoints = samplePoints;
+//                tempSpeed = speed;
+//                tempTriggerLevel = triggerLevel;
 
                 TextView mGridXText =
                         (TextView) dialogView.findViewById(R.id.gridX);
@@ -301,21 +300,21 @@ public class MainActivity extends Activity {
                         (SeekBar) dialogView.findViewById(R.id.samplePointsSeekBar);
                 RadioButton mBlackStyleRadioButton = (RadioButton) dialogView.findViewById(R.id.black_style);
                 RadioButton mWhiteStyleRadioButton = (RadioButton) dialogView.findViewById(R.id.white_style);
-                RadioButton mTriggerURadioButton = (RadioButton) dialogView.findViewById(R.id.upward);
-                RadioButton mTriggerDRadioButton = (RadioButton) dialogView.findViewById(R.id.downward);
-                RadioButton mTriggerNRadioButton = (RadioButton) dialogView.findViewById(R.id.notrigger);
+//                RadioButton mTriggerURadioButton = (RadioButton) dialogView.findViewById(R.id.upward);
+//                RadioButton mTriggerDRadioButton = (RadioButton) dialogView.findViewById(R.id.downward);
+//                RadioButton mTriggerNRadioButton = (RadioButton) dialogView.findViewById(R.id.notrigger);
 
                 if(mainView.style == mainView.STYLE_BLACK)
                     mBlackStyleRadioButton.setChecked(true);
                 else
                     mWhiteStyleRadioButton.setChecked(true);
 
-                if(triggerMode == TRIGGER_U)
-                    mTriggerURadioButton.setChecked(true);
-                else if (triggerMode == TRIGGER_D)
-                    mTriggerDRadioButton.setChecked(true);
-                else
-                    mTriggerNRadioButton.setChecked(true);
+//                if(triggerMode == TRIGGER_U)
+//                    mTriggerURadioButton.setChecked(true);
+//                else if (triggerMode == TRIGGER_D)
+//                    mTriggerDRadioButton.setChecked(true);
+//                else
+//                    mTriggerNRadioButton.setChecked(true);
 
                 mGridXSeekBar.setProgress(tempGridX);
                 mGridYSeekBar.setProgress(tempGridY);
@@ -427,20 +426,20 @@ public class MainActivity extends Activity {
                                     mainView.style = mainView.STYLE_WHITE;
                                 mainView.invalidate();
 
-                                triggerLevel = tempTriggerLevel;
-                                RadioButton mTriggerURadioButton = (RadioButton) dialogView.findViewById(R.id.upward);
-                                RadioButton mTriggerDRadioButton = (RadioButton) dialogView.findViewById(R.id.downward);
-                                if(mTriggerURadioButton.isChecked())
-                                    triggerMode = TRIGGER_U;
-                                else if(mTriggerDRadioButton.isChecked())
-                                    triggerMode = TRIGGER_D;
-                                else
-                                    triggerMode = TRIGGER_N;
-
-                                samplePoints = tempPoints;
-                                speed = tempSpeed;
+//                                triggerLevel = tempTriggerLevel;
+//                                RadioButton mTriggerURadioButton = (RadioButton) dialogView.findViewById(R.id.upward);
+//                                RadioButton mTriggerDRadioButton = (RadioButton) dialogView.findViewById(R.id.downward);
+//                                if(mTriggerURadioButton.isChecked())
+//                                    triggerMode = TRIGGER_U;
+//                                else if(mTriggerDRadioButton.isChecked())
+//                                    triggerMode = TRIGGER_D;
+//                                else
+//                                    triggerMode = TRIGGER_N;
+//
+//                                samplePoints = tempPoints;
+//                                speed = tempSpeed;
                                 if(mInternetService.mState == mInternetService.STATE_CONNECTED)
-                                    mInternetService.sendOptionsAndStart(triggerLevel,triggerMode,speed,samplePoints);
+//                                    mInternetService.sendOptionsAndStart(triggerLevel,triggerMode,speed,samplePoints);
                                 saveSharedPreference();
                             }
                         });
@@ -461,10 +460,10 @@ public class MainActivity extends Activity {
     }
     private void loadSharedPreference(){
         SharedPreferences userSettings = getSharedPreferences("options", 0);
-        triggerLevel = userSettings.getInt("triggerLevel",0x7F);
-        triggerMode = userSettings.getInt("triggerMode",TRIGGER_U);
-        samplePoints = userSettings.getInt("samplePoints",1023);
-        speed = userSettings.getInt("speed",0);
+//        triggerLevel = userSettings.getInt("triggerLevel",0x7F);
+//        triggerMode = userSettings.getInt("triggerMode",TRIGGER_U);
+//        samplePoints = userSettings.getInt("samplePoints",1023);
+//        speed = userSettings.getInt("speed",0);
         mainView.gridX = userSettings.getInt("gridX",4);
         mainView.gridY = userSettings.getInt("gridY",3);
         mainView.style = userSettings.getInt("style ",mainView.STYLE_BLACK);
@@ -473,10 +472,10 @@ public class MainActivity extends Activity {
     private void saveSharedPreference(){
         SharedPreferences userSettings = getSharedPreferences("options", 0);
         SharedPreferences.Editor editor = userSettings.edit();
-        editor.putInt("triggerLevel",triggerLevel);
-        editor.putInt("triggerMode",triggerMode);
-        editor.putInt("samplePoints",samplePoints);
-        editor.putInt("speed",speed);
+//        editor.putInt("triggerLevel",triggerLevel);
+//        editor.putInt("triggerMode",triggerMode);
+//        editor.putInt("samplePoints",samplePoints);
+//        editor.putInt("speed",speed);
         editor.putInt("gridX",mainView.gridX);
         editor.putInt("gridY",mainView.gridY);
         editor.putInt("style ",mainView.style);
