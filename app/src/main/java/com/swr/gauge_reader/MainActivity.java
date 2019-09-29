@@ -73,6 +73,8 @@ public class MainActivity extends Activity {
                 .detectLeakedSqlLiteObjects().detectLeakedClosableObjects()
                 .penaltyLog().penaltyDeath().build());
 
+        byte[] a = DataTransfer.Double2Bytes(1.2);
+        double b = DataTransfer.Bytes2Double(a);
         mainView = findViewById(R.id.mainview);
         loadSharedPreference();
         log = findViewById(R.id.log);

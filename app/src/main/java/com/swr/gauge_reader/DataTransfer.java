@@ -24,23 +24,23 @@ public class DataTransfer {
         return byteRet;
     }
     public static double Bytes2Double(byte[] bytes){
-        int res = 0;
-        for (int i = 0; i < 7; i++) {
-            res = (res << 8)|(bytes[i]&(byte)0xFF);
+        long res = 0;
+        for (int i = 0; i < 8; i++) {
+            res |= ((long) (bytes[i] & 0xff)) << (8 * i);
         }
         return Double.longBitsToDouble(res);
     }
     public static int Bytes2Int(byte[] bytes){
         int res = 0;
         for (int i = 0; i < 4; i++) {
-            res = (res << 8)|(bytes[i]&(byte)0xFF);
+            res = (res << 8) + (bytes[i]&0xFF);
         }
         return res;
     }
     public static long Bytes2Long(byte[] bytes){
         long res = 0;
-        for (int i = 0; i < 7; i++) {
-            res = (res << 8)|(bytes[i]&(byte)0xFF);
+        for (int i = 0; i < 8; i++) {
+            res = (res << 8) + (bytes[i]&0xFF);
         }
         return res;
     }

@@ -297,9 +297,9 @@ public class InternetService {
                     int len = DataTransfer.Bytes2Int(DataTransfer.BytesSub(pack,0,4));
                     for(int i = 0; i < len; i++){
                         long capture_time =
-                                DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 8 + 4, i * 8 + 12));
+                                DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 16 + 4, i * 16 + 12));
                         double value =
-                                DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 8 + 12, i * 8 + 20));
+                                DataTransfer.Bytes2Double(DataTransfer.BytesSub(pack,i * 16 + 12, i * 16 + 20));
                         popMessage("capture_time:" +  String.valueOf(capture_time));
                         popMessage("value:" +  String.valueOf(value));
 
@@ -345,7 +345,6 @@ public class InternetService {
                         data_buffer = DataTransfer.BytesConcact(data_buffer,
                                 DataTransfer.BytesSub(data,0, data_len - received_len + data.length));
                         state = FIND_HEAD;
-                        popMessage(data_buffer.toString());
                         cancel();
                         handleTCPPack(data_buffer[0],DataTransfer.BytesSub(data_buffer,1,data_buffer.length));
                         return true;
