@@ -4,20 +4,22 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.ImageView;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
  * Created by t4343 on 2018/3/31.
  */
 
-public class MainView extends View {
-
+public class MainView extends AppCompatImageView {
     double[] data = null;
     long[] time = new long[0];
 
@@ -301,12 +303,14 @@ public class MainView extends View {
         paint.setTextSize(mTextSize);
         paint.setColor(Color.GRAY);
         try {
-            canvas.drawText(String.format("value:%.1fV",data[capturedX]),
+            canvas.drawText(String.format("value:%.1f",data[capturedX]),
                     (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*1.5),paint);
         }catch(ArrayIndexOutOfBoundsException  e){
             e.printStackTrace();
         }
-        canvas.drawText(String.format("time:%d ms",capturedX),
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date date = new Date(time[capturedX]);
+        canvas.drawText("time:" + sdf.format(date) ,
                 (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
     }
     void calculateValue(Canvas canvas){

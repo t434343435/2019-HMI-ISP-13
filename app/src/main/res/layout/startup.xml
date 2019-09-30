@@ -26,29 +26,27 @@
             android:id="@+id/mainview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="0.8"
+            android:layout_weight="0.7"
             android:background="@drawable/osc"/>
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="0.9"
+            tools:src="@tools:sample/backgrounds/scenic[17]" />
 
         <TextView
             android:id="@+id/log"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="1"
+            android:layout_weight="1.2"
             android:layout_gravity="center_horizontal"
             android:textColor="#7F7F7F"
             android:textSize="18sp"
             android:scrollbars="vertical"
             android:stackFromBottom="true"
             android:text="Welcome to use gauge reader!\n"/>
-
-
-        <ImageView
-            android:id="@+id/imageView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.9"
-            tools:src="@tools:sample/backgrounds/scenic" />
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -70,7 +68,6 @@
                 android:layout_weight="1"
                 android:text="删除波形" />
         </LinearLayout>
-
 
         <LinearLayout
             android:layout_width="match_parent"

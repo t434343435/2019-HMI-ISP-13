@@ -40,7 +40,7 @@ public class DataTransfer {
     public static long Bytes2Long(byte[] bytes){
         long res = 0;
         for (int i = 0; i < 8; i++) {
-            res = (res << 8) + (bytes[i]&0xFF);
+            res |= ((long) (bytes[i] & 0xff)) << (8 * i);
         }
         return res;
     }

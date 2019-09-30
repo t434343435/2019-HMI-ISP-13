@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RadioButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -37,6 +38,7 @@ public class MainActivity extends Activity {
     public Button mCaptureButton;
     public Button mOptionsButton;
 
+    public ImageView mImageView;
 
     File[] files;
     ArrayList<Integer> yourChoices = new ArrayList<>();
@@ -46,7 +48,7 @@ public class MainActivity extends Activity {
     int tempGridX;
     int tempGridY;
 
-    private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
+    private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x81};
     private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
 
     @Override
@@ -56,6 +58,8 @@ public class MainActivity extends Activity {
         setContentView(R.layout.startup);
         mainView = findViewById(R.id.mainview);
         loadSharedPreference();
+
+        mImageView = findViewById(R.id.imageView);
 
         log = findViewById(R.id.log);
         log.setMovementMethod(new ScrollingMovementMethod());

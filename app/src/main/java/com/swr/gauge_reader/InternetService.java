@@ -1,12 +1,15 @@
 package com.swr.gauge_reader;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,12 +35,13 @@ public class InternetService {
     public static final int STATE_CONNECTED = 2;
 
     public static final int MESSAGE_INVALIDATE = 0;
-    public static final int MESSAGE_TOAST = 1;
-    public static final int MESSAGE_SET_TO_CONNECT = 2;
-    public static final int MESSAGE_SET_CONNECTING = 3;
-    public static final int MESSAGE_SET_CONNECTED = 4;
+    public static final int MESSAGE_IMAGE = 1;
+    public static final int MESSAGE_TOAST = 2;
+    public static final int MESSAGE_SET_TO_CONNECT = 3;
+    public static final int MESSAGE_SET_CONNECTING =4;
+    public static final int MESSAGE_SET_CONNECTED = 5;
 
-    private final String SERVER_HOST_IP = "106.54.219.89";
+    private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
     private final int SERVER_HOST_PORT = 9999;
     private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
     private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
@@ -63,6 +67,14 @@ public class InternetService {
                         view.time = time;
                         activity.mSaveDataButton.setEnabled(true);
                         view.invalidate();
+                        break;
+
+                    case MESSAGE_IMAGE:
+                        ImageView imgview = ((MainActivity)context).mImageView;
+                        byte[] img = (byte[])msg.obj;
+                        Bitmap bm = BitmapFactory.decodeByteArray(img,0,img.length);
+                        imgview.setImageBitmap(bm);
+                        imgview.invalidate();
                         break;
 
                     case MESSAGE_TOAST:
@@ -185,6 +197,7 @@ public class InternetService {
         private final byte[] HEAD = "GgRd:".getBytes();
 
         private static final byte SC_DATA = (byte)0x80;
+        private static final byte SC_IMAGE = (byte)0x81;
 
         public ConnectedThread(Socket socket, byte[] send) {
             mSend = send;
@@ -276,6 +289,11 @@ public class InternetService {
                     msg.setData(b);
                     mHandler.sendMessage(msg);
                     break;
+                case SC_IMAGE:
+                    byte[] image = DataTransfer.BytesSub(pack,6,pack.length);
+                    Message msg1 = mHandler.obtainMessage(MESSAGE_IMAGE);
+                    msg1.obj = image;
+                    mHandler.sendMessage(msg1);
                 default:
             }
         }
