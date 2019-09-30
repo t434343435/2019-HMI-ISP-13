@@ -7,7 +7,6 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Message;
-import android.os.StrictMode;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,27 +26,17 @@ import java.util.*;
 
 public class MainActivity extends Activity {
 
-
-//    final int TRIGGER_U = 0;
-//    final int TRIGGER_D = 1;
-//    final int TRIGGER_N = 2;
-
-
     InternetService mInternetService;
 
     public MainView mainView;
     public TextView log;
     public Button mInternetButton;
-    public Button mHelpButton;
+    public Button mDeleteWaveButton;
     public Button mHistoricalDataButton;
     public Button mSaveDataButton;
     public Button mCaptureButton;
     public Button mOptionsButton;
 
-//    int triggerLevel = 0x7F;
-//    int triggerMode = TRIGGER_U;
-//    int samplePoints = 1023;
-//    int speed = 3;
 
     File[] files;
     ArrayList<Integer> yourChoices = new ArrayList<>();
@@ -56,35 +45,29 @@ public class MainActivity extends Activity {
 
     int tempGridX;
     int tempGridY;
-    int tempSpeed;
-    int tempTriggerLevel;
-    int tempPoints;
+
+    private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
+    private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
 
     @Override
     public void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.startup);
-        //约束socket允许运行在主线程
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
-                .detectDiskReads().detectDiskWrites().detectNetwork()
-                .penaltyLog().build());
-        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
-                .detectLeakedSqlLiteObjects().detectLeakedClosableObjects()
-                .penaltyLog().penaltyDeath().build());
-
-        byte[] a = DataTransfer.Double2Bytes(1.2);
-        double b = DataTransfer.Bytes2Double(a);
         mainView = findViewById(R.id.mainview);
         loadSharedPreference();
+
         log = findViewById(R.id.log);
         log.setMovementMethod(new ScrollingMovementMethod());
-        mInternetButton = findViewById(R.id.bluetooth);
+
+        mInternetButton = findViewById(R.id.internet_button);
         mInternetService = new InternetService(this);
-        Message msg = mInternetService.mHandler.obtainMessage(InternetService.MESSAGE_UPDATEINTERNETBUTOON);
+        Message msg = mInternetService.mHandler.obtainMessage(InternetService.MESSAGE_SET_TO_CONNECT);
         mInternetService.mHandler.sendMessage(msg);
-        mHelpButton = findViewById(R.id.delete_wave);
-        mHelpButton.setOnClickListener(new View.OnClickListener() {
+
+        // set the delete wave function
+        mDeleteWaveButton = findViewById(R.id.delete_wave);
+        mDeleteWaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 final AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
                 builder.setIcon(R.drawable.osc);
@@ -162,6 +145,8 @@ public class MainActivity extends Activity {
                 builder.show();
             }
         });
+        
+        //set the historical data button
         mHistoricalDataButton = findViewById(R.id.historical_data);
         mHistoricalDataButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -193,11 +178,11 @@ public class MainActivity extends Activity {
                             fis.read(buffer);
                             String s = new String(buffer);
                             String [] ss = s.split(" ");
-                            mainView.data = new int [ss.length - 1];
-                            mainView.dataSize = ss.length - 1;
-//                            mainView.speed = Integer.parseInt(ss[0]);
-                            for(int i = 0;i<ss.length-1;i++){
-                                mainView.data[i] = Integer.parseInt(ss[i+1]);
+                            mainView.data = new double[ss.length];
+                            for(int i = 0;i<ss.length;i++){
+                                String[] res = ss[i].split(":");
+                                mainView.time[i] = Long.parseLong(res[0]);
+                                mainView.data[i] = Double.parseDouble(res[1]);
                             }
                             mainView.resetScaleOrigin();
                             mainView.invalidate();
@@ -207,7 +192,6 @@ public class MainActivity extends Activity {
                             fis.close();
                         } catch (Exception e) {
                             mainView.data = null;
-                            mainView.dataSize = 0;
                             mSaveDataButton.setEnabled(false);
                             mainView.invalidate();
                             e.printStackTrace();
@@ -218,6 +202,8 @@ public class MainActivity extends Activity {
                 builder.show();
             }
         });
+        
+        // set the save data button function
         mSaveDataButton = findViewById(R.id.save_data);
         mSaveDataButton.setEnabled(false);
         mSaveDataButton.setOnClickListener(new View.OnClickListener() {
@@ -228,14 +214,15 @@ public class MainActivity extends Activity {
                 Date date = new Date(System.currentTimeMillis()); //获取当前时间
                 String mDateString = simpleDateFormat.format(date);
                 try {
-                    int [] mData = mainView.data;
+                    double [] mData = mainView.data;
+                    long [] mTime = mainView.time;
                     if(mData == null)return;
                     FileOutputStream mFOS = MainActivity.this.openFileOutput("wave+"+mDateString, MODE_PRIVATE);//获得FileOutputStream //////
                     //将要写入的字符串转换为byte数组
                     StringBuffer tBuffer = new StringBuffer();
 //                    tBuffer.append(String.format("%d ", speed));
-                    for(int val:mData){
-                        tBuffer.append(String.format("%d ", val));
+                    for(int i = 0; i < mData.length; i++){
+                        tBuffer.append(String.format("%d:%f ", mTime[i], mData[i]));
                     }
                     String string = tBuffer.toString();
                     byte [] bytes = string.getBytes();
@@ -248,20 +235,23 @@ public class MainActivity extends Activity {
 
             }
         });
+
+        // set the capture button function
         mCaptureButton = findViewById(R.id.capture_wave);
         mCaptureButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-//                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
-//                    mInternetService.sendCapture();
+                mInternetService.connect(FIRST_BYTE);
             }
         });
         mCaptureButton.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
-//                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
-//                    mInternetService.sendContinuousCapture();
+
                 return true;
             }
         });
+
+        
+        // set the options button function
         mOptionsButton = findViewById(R.id.options);
         mOptionsButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -275,59 +265,31 @@ public class MainActivity extends Activity {
                 // 获取EditView中的输入内容
                 tempGridX = mainView.gridX;
                 tempGridY = mainView.gridY;
-//                tempPoints = samplePoints;
-//                tempSpeed = speed;
-//                tempTriggerLevel = triggerLevel;
 
                 TextView mGridXText =
                         (TextView) dialogView.findViewById(R.id.gridX);
                 TextView mGridYText =
                         (TextView) dialogView.findViewById(R.id.gridY);
-                TextView mSampleTimeText =
-                        (TextView) dialogView.findViewById(R.id.sample_time);
-                TextView mTriggerLevelText =
-                        (TextView) dialogView.findViewById(R.id.triggerlevel);
-                TextView mPointsText =
-                        (TextView) dialogView.findViewById(R.id.sample_points);
+
 
                 SeekBar mGridXSeekBar =
                         (SeekBar) dialogView.findViewById(R.id.gridXSeekBar);
                 SeekBar mGridYSeekBar =
                         (SeekBar) dialogView.findViewById(R.id.gridYSeekBar);
-                SeekBar mSampleTimeSeekBar =
-                        (SeekBar) dialogView.findViewById(R.id.sampleTimeSeekBar);
-                SeekBar mTriggerLevelSeekBar =
-                        (SeekBar) dialogView.findViewById(R.id.scaleSeekBar);
-                SeekBar mPointsSeekBar =
-                        (SeekBar) dialogView.findViewById(R.id.samplePointsSeekBar);
+
                 RadioButton mBlackStyleRadioButton = (RadioButton) dialogView.findViewById(R.id.black_style);
                 RadioButton mWhiteStyleRadioButton = (RadioButton) dialogView.findViewById(R.id.white_style);
-//                RadioButton mTriggerURadioButton = (RadioButton) dialogView.findViewById(R.id.upward);
-//                RadioButton mTriggerDRadioButton = (RadioButton) dialogView.findViewById(R.id.downward);
-//                RadioButton mTriggerNRadioButton = (RadioButton) dialogView.findViewById(R.id.notrigger);
 
                 if(mainView.style == mainView.STYLE_BLACK)
                     mBlackStyleRadioButton.setChecked(true);
                 else
                     mWhiteStyleRadioButton.setChecked(true);
 
-//                if(triggerMode == TRIGGER_U)
-//                    mTriggerURadioButton.setChecked(true);
-//                else if (triggerMode == TRIGGER_D)
-//                    mTriggerDRadioButton.setChecked(true);
-//                else
-//                    mTriggerNRadioButton.setChecked(true);
-
                 mGridXSeekBar.setProgress(tempGridX);
                 mGridYSeekBar.setProgress(tempGridY);
-                mPointsSeekBar.setProgress(tempPoints);
-                mSampleTimeSeekBar.setProgress(tempSpeed);
-                mTriggerLevelSeekBar.setProgress(tempTriggerLevel);
+
                 mGridXText.setText("x轴的网格数:"+tempGridX);
                 mGridYText.setText("y轴的网格数:"+tempGridY);
-                mTriggerLevelText.setText("触发电平:"+tempTriggerLevel);
-                mPointsText.setText("采样点数:"+(tempPoints+1));
-                mSampleTimeText.setText("采样速率:"+tempSpeed);
 
                 mGridXSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
                     @Override
@@ -372,49 +334,8 @@ public class MainActivity extends Activity {
                     public void  onStopTrackingTouch(SeekBar seekBar) {}
                 });
 
-                mSampleTimeSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                    @Override
-                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                        TextView mSampleTimeText =
-                                (TextView) dialogView.findViewById(R.id.sample_time);
-                        tempSpeed = progress;
-                        mSampleTimeText.setText("采样速率:"+tempSpeed);
-                    }
-                    @Override
-                    public void onStartTrackingTouch(SeekBar seekBar) {}
-                    @Override
-                    public void  onStopTrackingTouch(SeekBar seekBar) {}
-                });
 
-                mTriggerLevelSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                    @Override
-                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                        TextView mTriggerLevelText =
-                                (TextView) dialogView.findViewById(R.id.triggerlevel);
-                        tempTriggerLevel = progress;
-                        mTriggerLevelText.setText("触发电平:"+tempTriggerLevel);
-                    }
-                    @Override
-                    public void onStartTrackingTouch(SeekBar seekBar) {}
-                    @Override
-                    public void  onStopTrackingTouch(SeekBar seekBar) {}
-                });
 
-                mPointsSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-                    @Override
-                    public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                        TextView mPointsText =
-                                (TextView) dialogView.findViewById(R.id.sample_points);
-                        SeekBar mGridYSeekBar =
-                                (SeekBar) dialogView.findViewById(R.id.samplePointsSeekBar);
-                        tempPoints = mGridYSeekBar.getProgress();
-                        mPointsText.setText("采样点数:"+(tempPoints+1));
-                    }
-                    @Override
-                    public void onStartTrackingTouch(SeekBar seekBar) {}
-                    @Override
-                    public void  onStopTrackingTouch(SeekBar seekBar) {}
-                });
                 builder.setPositiveButton("确定",
                         new DialogInterface.OnClickListener() {
                             @Override
@@ -427,21 +348,6 @@ public class MainActivity extends Activity {
                                 else
                                     mainView.style = mainView.STYLE_WHITE;
                                 mainView.invalidate();
-
-//                                triggerLevel = tempTriggerLevel;
-//                                RadioButton mTriggerURadioButton = (RadioButton) dialogView.findViewById(R.id.upward);
-//                                RadioButton mTriggerDRadioButton = (RadioButton) dialogView.findViewById(R.id.downward);
-//                                if(mTriggerURadioButton.isChecked())
-//                                    triggerMode = TRIGGER_U;
-//                                else if(mTriggerDRadioButton.isChecked())
-//                                    triggerMode = TRIGGER_D;
-//                                else
-//                                    triggerMode = TRIGGER_N;
-//
-//                                samplePoints = tempPoints;
-//                                speed = tempSpeed;
-                                if(mInternetService.mState == mInternetService.STATE_CONNECTED)
-//                                    mInternetService.sendOptionsAndStart(triggerLevel,triggerMode,speed,samplePoints);
                                 saveSharedPreference();
                             }
                         });
@@ -450,39 +356,27 @@ public class MainActivity extends Activity {
 
             }
         });
-        /*new Handler().postDelayed(new Runnable() {
-
-            @Override
-            public void run() {
-                //do something
-            }
-        }, 3000);    //延时3s执行*/
-        //Intent myIntent = new Intent(MainActivity.this, OscilloscopeActivity.class);
-        //MainActivity.this.startActivity(myIntent);*/
     }
+    
     private void loadSharedPreference(){
         SharedPreferences userSettings = getSharedPreferences("options", 0);
-//        triggerLevel = userSettings.getInt("triggerLevel",0x7F);
-//        triggerMode = userSettings.getInt("triggerMode",TRIGGER_U);
-//        samplePoints = userSettings.getInt("samplePoints",1023);
-//        speed = userSettings.getInt("speed",0);
+
         mainView.gridX = userSettings.getInt("gridX",4);
         mainView.gridY = userSettings.getInt("gridY",3);
         mainView.style = userSettings.getInt("style ",mainView.STYLE_BLACK);
 
     }
+    
     private void saveSharedPreference(){
         SharedPreferences userSettings = getSharedPreferences("options", 0);
         SharedPreferences.Editor editor = userSettings.edit();
-//        editor.putInt("triggerLevel",triggerLevel);
-//        editor.putInt("triggerMode",triggerMode);
-//        editor.putInt("samplePoints",samplePoints);
-//        editor.putInt("speed",speed);
+
         editor.putInt("gridX",mainView.gridX);
         editor.putInt("gridY",mainView.gridY);
         editor.putInt("style ",mainView.style);
         editor.commit();
     }
+    
     @Override
     protected void onResume() {
         super.onResume();

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -30,18 +31,16 @@ public class InternetService {
     public static final int STATE_CONNECTING = 1;
     public static final int STATE_CONNECTED = 2;
 
-
     public static final int MESSAGE_INVALIDATE = 0;
-    public static final int MESSAGE_UPDATEINTERNETBUTOON = 1;
-    public static final int MESSAGE_TOAST = 2;
-    public static final int MESSAGE_REQUESTENABLE = 3;
-    public static final int MESSAGE_SENDSTART = 4;
+    public static final int MESSAGE_TOAST = 1;
+    public static final int MESSAGE_SET_TO_CONNECT = 2;
+    public static final int MESSAGE_SET_CONNECTING = 3;
+    public static final int MESSAGE_SET_CONNECTED = 4;
 
-
-
-    private final String SERVER_HOST_IP = "192.168.43.72";
+    private final String SERVER_HOST_IP = "106.54.219.89";
     private final int SERVER_HOST_PORT = 9999;
-
+    private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
+    private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
     public Handler mHandler;
     private Context context;
     public ConnectedThread mConnectedThread;
@@ -49,18 +48,19 @@ public class InternetService {
 
     public InternetService(final Context context){
         //这里把接受到的字符串写进去
+
         mHandler = new Handler(new Handler.Callback() {
             @Override
             public boolean handleMessage(Message msg) {
                 final MainActivity activity = ((MainActivity)context);
+                Button mInternetButton = activity.mInternetButton ;
                 switch (msg.what) {
                     case MESSAGE_INVALIDATE:
-                        int[] Data = (int[]) msg.obj;
-                        int DataSize = msg.arg1;
                         MainView view = ((MainActivity)context).mainView;
-                        view.setDataSize(DataSize);
-                        view.data = Data;
-//                        view.speed = activity.speed;
+                        long[] time = msg.getData().getLongArray("time");
+                        double[] value = msg.getData().getDoubleArray("value");
+                        view.data = value;
+                        view.time = time;
                         activity.mSaveDataButton.setEnabled(true);
                         view.invalidate();
                         break;
@@ -73,52 +73,38 @@ public class InternetService {
                         int scroll_amount = (int) (log.getLineCount() * log.getLineHeight()) - (log.getBottom() - log.getTop());
                         log.scrollTo(0, scroll_amount);
                         break;
-                    case MESSAGE_REQUESTENABLE:
-                        //it seems that it's no use
-//                        Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-//                        activity.startActivityForResult(enableBtIntent,0);
-                        break;
-                    case MESSAGE_SENDSTART:
-//                        sendOptionsAndStart(activity.triggerLevel,activity.triggerMode,
-//                                            activity.speed,activity.samplePoints);
-                        break;
-                    case MESSAGE_UPDATEINTERNETBUTOON:
-                        Button mInternetButton = activity.mInternetButton ;
-
-                        if (mState ==STATE_NONE){
+                    case MESSAGE_SET_TO_CONNECT:
                             // set button states
                             activity.mCaptureButton.setEnabled(false);
                             activity.mInternetButton.setEnabled(true);
                             activity.mInternetButton.setText("网络连接");
-                            
                             //set click motion
                             //if you click the connect button, it connects to the SERVER_HOST_IP,SERVER_HOST_PORT specified before
                             mInternetButton.setOnClickListener(new View.OnClickListener() {
                                 @Override
                                 public void onClick(View v) {
-                                    connect();
+                                    connect(FIRST_BYTE);
+                                    popMessage("connecting...");
                                 }
                             });
-                        }else if(mState == STATE_CONNECTING){
-                            mInternetButton.setEnabled(false);
-                            mInternetButton.setText("连接中");
-                            mInternetButton.setOnClickListener(null);
-                        }else if(mState == STATE_CONNECTED){
-                            mInternetButton.setEnabled(true);
-                            activity.mCaptureButton.setEnabled(true);
-                            mInternetButton.setText("断开连接");
-
-                            mInternetButton.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-//                                    sendDisconnect();
-                                    InternetService.this.mConnectedThread.cancel();
-
-                                }
-                            });
-
-                        }
-
+                        break;
+                    case MESSAGE_SET_CONNECTING:
+                        mInternetButton.setEnabled(false);
+                        mInternetButton.setText("连接中");
+                        mInternetButton.setOnClickListener(null);
+                        break;
+                    case MESSAGE_SET_CONNECTED:
+                        mInternetButton.setEnabled(true);
+                        activity.mCaptureButton.setEnabled(true);
+                        mInternetButton.setText("断开连接");
+                        mInternetButton.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                mState = STATE_NONE;
+                                Message msg = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
+                                mHandler.sendMessage(msg);
+                            }
+                        });
                         break;
                 }
                 return true;
@@ -126,32 +112,23 @@ public class InternetService {
         });
         this.context = context;
     }
-    public void connect(){
+    public void connect(byte[] send){
         // If there are paired devices, add each one to the ArrayAdapter
-        new Thread(new ConnectThread()).start();
-    }
-
-
-    public void write(byte[] out) {
-        ConnectedThread r;
-        synchronized (this) {
-            if (mState != STATE_CONNECTED) return;
-            r = mConnectedThread;
-        }
-        r.write(out);
+        new Thread(new ConnectThread(send)).start();
     }
 
 
     private class ConnectThread extends Thread {
         private Socket socket;
-        public ConnectThread() {
+        private byte[] mSend;
+        public ConnectThread(byte[] send) {
+            mSend = send;
             mState = STATE_CONNECTING;
-            Message msg = mHandler.obtainMessage(MESSAGE_UPDATEINTERNETBUTOON);
+            Message msg = mHandler.obtainMessage(MESSAGE_SET_CONNECTING);
             mHandler.sendMessage(msg);
         }
 
         public void run() {
-//            popMessage("客户端连接中...");
             try{
                 socket = new Socket();
                 socket.connect(new InetSocketAddress(SERVER_HOST_IP, SERVER_HOST_PORT), 2000);
@@ -179,29 +156,21 @@ public class InternetService {
                 socket = null;
             }
             if (socket != null) {
-//                popMessage("连接建立成功");
-
-                new Thread(new ConnectedThread(socket)).start();
+                new Thread(new ConnectedThread(socket,mSend)).start();
             } else {
-                //popMessage("已建立连接,但是套接字为空");
                 mState = STATE_NONE;
-                Message msg1 = mHandler.obtainMessage(MESSAGE_UPDATEINTERNETBUTOON);
+                Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
                 mHandler.sendMessage(msg1);
             }
         }
-
-        public void cancel() {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                popMessage( "close() of connect socket failed: "+e.getMessage() +"\n");
-            }
-        }
     }
+
     public class ConnectedThread extends Thread {
         private final Socket mmSocket;
         private final InputStream mmInStream;
         private final OutputStream mmOutStream;
+
+        private byte[] mSend;
 
         private int state;
         private byte[] bytes_buffer;
@@ -217,7 +186,9 @@ public class InternetService {
 
         private static final byte SC_DATA = (byte)0x80;
 
-        public ConnectedThread(Socket socket) {
+        public ConnectedThread(Socket socket, byte[] send) {
+            mSend = send;
+
             mmSocket = socket;
             InputStream tmpIn = null;
             OutputStream tmpOut = null;
@@ -238,31 +209,27 @@ public class InternetService {
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
             mState = STATE_CONNECTED;
-            Message msg = mHandler.obtainMessage(MESSAGE_UPDATEINTERNETBUTOON);
+            Message msg = mHandler.obtainMessage(MESSAGE_SET_CONNECTED);
             mHandler.sendMessage(msg);
 
         }
 
         public void run() {
-//            popMessage("开始建立连接线程");
             byte[] buffer = new byte[1024];
             int bytes;
-            try{
-                mmOutStream.write("received".getBytes());}
-            catch (IOException e){
-
-            }
+            write(mSend);
             while (mState == STATE_CONNECTED) {
                 try {
                     // Read from the InputStream
+                    byte[] data = new byte[0];
                     bytes = mmInStream.read(buffer);
-                    byte[] data = DataTransfer.BytesSub(buffer,0,bytes);
+                    if(bytes > 0)
+                        data = DataTransfer.BytesSub(buffer,0,bytes);
                     handleData(data);
-
                 } catch (IOException e) {
                     popMessage("已失去连接");
                     mState = STATE_NONE;
-                    Message msg1 = mHandler.obtainMessage(MESSAGE_UPDATEINTERNETBUTOON);
+                    Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
                     mHandler.sendMessage(msg1);
                     break;
                 }
@@ -273,8 +240,6 @@ public class InternetService {
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
-
-                // Share the sent message back to the UI Activity
             } catch (IOException e) {
                 popMessage("写操作出现异常");
             }
@@ -284,8 +249,6 @@ public class InternetService {
             try {
                 mmSocket.close();
                 mState = STATE_NONE;
-                Message msg = mHandler.obtainMessage(MESSAGE_UPDATEINTERNETBUTOON);
-                mHandler.sendMessage(msg);
             } catch (IOException e) {
                 popMessage("关闭套接字失败");
             }
@@ -295,15 +258,23 @@ public class InternetService {
             switch(state_code){
                 case SC_DATA:
                     int len = DataTransfer.Bytes2Int(DataTransfer.BytesSub(pack,0,4));
+                    long[] time = new long[len];
+                    double[] value = new double[len];
                     for(int i = 0; i < len; i++){
-                        long capture_time =
+                        time[i] =
                                 DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 16 + 4, i * 16 + 12));
-                        double value =
+                        value[i] =
                                 DataTransfer.Bytes2Double(DataTransfer.BytesSub(pack,i * 16 + 12, i * 16 + 20));
-                        popMessage("capture_time:" +  String.valueOf(capture_time));
-                        popMessage("value:" +  String.valueOf(value));
+////                        popMessage("capture_time:" +  String.valueOf(capture_time));
+////                        popMessage("value:" +  String.valueOf(value));
 
-                }
+                    }
+                    Message msg = mHandler.obtainMessage(MESSAGE_INVALIDATE);
+                    Bundle b = new Bundle();
+                    b.putLongArray("time",time);
+                    b.putDoubleArray("value",value);
+                    msg.setData(b);
+                    mHandler.sendMessage(msg);
                     break;
                 default:
             }
@@ -360,20 +331,6 @@ public class InternetService {
         b.putString("msg", string );
         msg.setData(b);
         mHandler.sendMessage(msg);
-    }
-
-
-    private class HandleDataThread extends Thread {
-        public HandleDataThread() {
-
-        }
-
-        public void run() {
-
-        }
-
-        public void cancel() {
-        }
     }
 }
 

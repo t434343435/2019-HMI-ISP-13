@@ -18,34 +18,37 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_gravity="center_horizontal"
-            android:layout_weight="1.15"
+            android:layout_weight="1.2"
             android:textColor="#000000"
             android:textSize="20dp" />
-
-        <ImageView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@drawable/tittle" />
 
         <com.swr.gauge_reader.MainView
             android:id="@+id/mainview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="0.7"
+            android:layout_weight="0.8"
             android:background="@drawable/osc"/>
 
         <TextView
             android:id="@+id/log"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="0.9"
+            android:layout_weight="1"
             android:layout_gravity="center_horizontal"
             android:textColor="#7F7F7F"
             android:textSize="18sp"
             android:scrollbars="vertical"
             android:stackFromBottom="true"
-            android:text="使用帮助：\n点击“蓝牙连接”可以搜索到的蓝牙设备，直接连接，匹配成功会有相关功能实现。点击“捕捉波形”，手机屏幕上更新实时波形，长按“点击波形”可以实现不间断的实时波形更新，点击“保存波形”，可以实现波形的保存，点击“删除波形”，可以选择性删除历史波形，在“选项”中，我们可以更改X轴Y轴的网格数、背景颜色、采样设置等。\n"/>
+            android:text="Welcome to use gauge reader!\n"/>
+
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.9"
+            tools:src="@tools:sample/backgrounds/scenic" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
@@ -54,7 +57,7 @@
 
 
             <Button
-                android:id="@+id/bluetooth"
+                android:id="@+id/internet_button"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
@@ -67,6 +70,7 @@
                 android:layout_weight="1"
                 android:text="删除波形" />
         </LinearLayout>
+
 
         <LinearLayout
             android:layout_width="match_parent"

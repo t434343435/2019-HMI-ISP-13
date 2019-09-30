@@ -10,15 +10,17 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
+import java.util.Date;
+
 /**
  * Created by t4343 on 2018/3/31.
  */
 
 public class MainView extends View {
-    int dataSize = 0;
-    int[] data = null;
 
-    final int MAX_VALUE = 255;
+    double[] data = null;
+    long[] time = new long[0];
+
     final float INITIAL_SCALE_VALUE = (float)0.9;
     final int STYLE_BLACK = 0;
     final int STYLE_WHITE = 1;
@@ -43,14 +45,16 @@ public class MainView extends View {
     private final GestureDetector.OnGestureListener mOnGestureListener = new GestureDetector.SimpleOnGestureListener() {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
-            int x = (int)((e.getX() - mOriginX) / mContentWidth*(dataSize-1)/mScaleX);
-            if(x >= 0 && x <dataSize) {
-                capturedX = x;
-                invalidate();
-                return true;
+            if(data.length == time.length) {
+                int mDataSize = data.length;
+                int x = (int) ((e.getX() - mOriginX) / mContentWidth * (mDataSize - 1) / mScaleX);
+                if (x >= 0 && x < mDataSize) {
+                    capturedX = x;
+                    invalidate();
+                    return true;
+                }
             }
             return false;
-
         }
 
         @Override
@@ -80,7 +84,6 @@ public class MainView extends View {
 
         @Override
         public boolean onDown(MotionEvent e) {
-            //Log.d("tuacy", "onDown");
             return true;
         }
 
@@ -147,7 +150,6 @@ public class MainView extends View {
             @Override
             public void	onScaleEnd(ScaleGestureDetector detector){
                 isScale = false;
-                //Log.d("tuacy", "onScaleEnd");
             }
         });
     }
@@ -169,7 +171,7 @@ public class MainView extends View {
         if(data!=null) {
             drawAxis(canvas);
             drawData(canvas);
-            if ((capturedX < dataSize) && (capturedX >= 0)) drawCursor(canvas);
+            if ((capturedX < data.length) && (capturedX >= 0)) drawCursor(canvas);
             calculateValue(canvas);
         }
     }
@@ -215,11 +217,21 @@ public class MainView extends View {
         Paint paint = new Paint();
         paint.setColor(Color.BLUE);
         paint.setStrokeWidth(3);
-        for(int i = 0 ;i < dataSize - 1;i++){
-            canvas.drawLine(mOriginX + i * mContentWidth/(dataSize-1)*mScaleX,
-                    mOriginY + (MAX_VALUE - data[i])*mContentHeight/MAX_VALUE*mScaleY,
-                    mOriginX + (i + 1) * mContentWidth/(dataSize-1)*mScaleX,
-                    mOriginY + (MAX_VALUE - data[i+1])*mContentHeight/MAX_VALUE*mScaleY,paint);
+        if(data.length == time.length) {
+            int mDataSize = data.length;
+            double mDataMax = data[0];
+            double mDataMin = data[0];
+            for(int i = 1; i < data.length; i++){
+                mDataMax = Math.max(data[i],mDataMax);
+                mDataMin = Math.min(data[i],mDataMin);
+            }
+            double mDataMaxMin = mDataMax - mDataMin;
+            for (int i = 0; i < mDataSize - 1; i++) {
+                canvas.drawLine(mOriginX + i * mContentWidth / (mDataSize - 1) * mScaleX,
+                        (float)(mOriginY + (mDataMax - data[i]) * mContentHeight / mDataMaxMin * mScaleY),
+                        mOriginX + (i + 1) * mContentWidth / (mDataSize - 1) * mScaleX,
+                        (float)(mOriginY + (mDataMax - data[i + 1]) * mContentHeight / mDataMaxMin * mScaleY), paint);
+            }
         }
 
     }
@@ -264,79 +276,46 @@ public class MainView extends View {
         paint.setColor(Color.YELLOW);
         paint.setStrokeWidth(2);
         try {
-            canvas.drawLine(mOriginX + capturedX * mContentWidth / (dataSize - 1) * mScaleX,
-                    0,
-                    mOriginX + capturedX * mContentWidth / (dataSize - 1) * mScaleX,
-                    mContentHeight, paint);
-
+            if(data.length == time.length) {
+                int mDataSize = data.length;
+                canvas.drawLine(mOriginX + capturedX * mContentWidth / (mDataSize - 1) * mScaleX,
+                        0,
+                        mOriginX + capturedX * mContentWidth / (mDataSize - 1) * mScaleX,
+                        mContentHeight, paint);
+            }
+            double mDataMax = data[0];
+            double mDataMin = data[0];
+            for(int i = 1; i < data.length; i++){
+                mDataMax = Math.max(data[i],mDataMax);
+                mDataMin = Math.min(data[i],mDataMin);
+            }
+            double mDataMaxMin = mDataMax - mDataMin;
             canvas.drawLine(0,
-                    mOriginY + (MAX_VALUE - data[capturedX]) * mContentHeight / MAX_VALUE * mScaleY,
+                    (float)(mOriginY + (mDataMax - data[capturedX]) * mContentHeight / mDataMaxMin * mScaleY),
                     mContentWidth,
-                    mOriginY + (MAX_VALUE - data[capturedX]) * mContentHeight / MAX_VALUE * mScaleY, paint);
+                    (float)(mOriginY + (mDataMax - data[capturedX]) * mContentHeight / mDataMaxMin * mScaleY), paint);
         }catch(ArrayIndexOutOfBoundsException  e){
             e.printStackTrace();
         }
         float mTextSize = mContentHeight/20;
         paint.setTextSize(mTextSize);
         paint.setColor(Color.GRAY);
-//        try {
-//            canvas.drawText(String.format("电压:%.1fV",(data[capturedX]-(float)MAX_VALUE/2)*mVoltageScale),
-//                    (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*1.5),paint);
-//        }catch(ArrayIndexOutOfBoundsException  e){
-//            e.printStackTrace();
-//        }
-//        canvas.drawText(String.format("时间:%.1fms",capturedX*mTimeScale[speed]),
-//                (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
+        try {
+            canvas.drawText(String.format("value:%.1fV",data[capturedX]),
+                    (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*1.5),paint);
+        }catch(ArrayIndexOutOfBoundsException  e){
+            e.printStackTrace();
+        }
+        canvas.drawText(String.format("time:%d ms",capturedX),
+                (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
     }
     void calculateValue(Canvas canvas){
-        //峰峰值
-        int min = MAX_VALUE,max = 0;
-        long sum_ave = 0;
-        long sum_root = 0;
-        int first = 0;
-        int first_trigger = 0;
-        int second_trigger = 0;
-        int state = 0;
-        for(int i = 0;i<dataSize;i++){
-            sum_ave = sum_ave + (data[i] - 127);
-            sum_root = sum_root + (data[i] - 127) * (data[i] - 127);
-            if(data[i]<min)min = data[i];
-            if(data[i]>max)max = data[i];
-            if((data[i] >50 && data[i]<206)&&state == 0){first = data[i];state = 1;first_trigger=i;}
-            if(state == 1) {
-                if(data[i]>first)state = 2;
-                else if(data[i]<first)state = 3;
-                else state = 1;
-            }
-            if(state == 2 && data[i]<first)state = 4;
-            if(state == 3 && data[i]>first)state = 5;
-            if(state == 4 && data[i]>first){second_trigger = i;state = 6;}
-            if(state == 5 && data[i]<first){second_trigger = i;state = 6;}
-        }
-
         float mTextSize = mContentHeight/20;
         Paint paint = new Paint();
         paint.setTextSize(mTextSize);
         paint.setColor(Color.GRAY);
-//        float vpp = (max - min)*mVoltageScale;
-//        float vmean = (float)(sum_ave)/(dataSize)*mVoltageScale;
-//        float vroot = 0;
-//        try {
-//            vroot = (float) Math.sqrt((float)sum_root / dataSize) * mVoltageScale;
-//        }catch (ArithmeticException e){
-//            e.printStackTrace();
-//        }
-//        canvas.drawText(String.format("峰峰值:%.1fV",vpp),(float)(mTextSize*0.5), (float)(mTextSize*1.5),paint);
-//        canvas.drawText(String.format("平均值:%.1fV",vmean),(float)(mTextSize*0.5), (float)(mTextSize*3),paint);
-//        canvas.drawText(String.format("方均根值:%.1fV",vroot),(float)(mTextSize*0.5), (float)(mTextSize*4.5),paint);
-//        if(second_trigger>first_trigger) {
-//            float freq = (float) 1000 / (second_trigger - first_trigger) / mTimeScale[speed];
-//            canvas.drawText(String.format("频率:%.1fHz", freq), (float) (mTextSize * 0.5), (float) (mTextSize * 6), paint);
-//        }
     }
-    public void setDataSize(int datasize){
-        dataSize = datasize;
-    }
+
     public void resetScaleOrigin(){
         mOriginX = mContentWidth*(1-INITIAL_SCALE_VALUE)/2;
         mOriginY = mContentHeight*(1-INITIAL_SCALE_VALUE)/2;
