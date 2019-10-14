@@ -1,9 +1,12 @@
 package com.swr.gauge_reader;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
@@ -16,7 +19,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Created by t4343 on 2018/3/31.
+ * Created by t4343 on 2018/9/31.
  */
 
 public class MainView extends AppCompatImageView {
@@ -47,6 +50,8 @@ public class MainView extends AppCompatImageView {
     private final GestureDetector.OnGestureListener mOnGestureListener = new GestureDetector.SimpleOnGestureListener() {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
+            invalidate();
+            if(data == null || time == null)return false;
             if(data.length == time.length) {
                 int mDataSize = data.length;
                 int x = (int) ((e.getX() - mOriginX) / mContentWidth * (mDataSize - 1) / mScaleX);
@@ -169,6 +174,7 @@ public class MainView extends AppCompatImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+
         drawStart(canvas);
         if(data!=null) {
             drawAxis(canvas);
@@ -176,6 +182,21 @@ public class MainView extends AppCompatImageView {
             if ((capturedX < data.length) && (capturedX >= 0)) drawCursor(canvas);
             calculateValue(canvas);
         }
+//        Paint paint = new Paint();
+//        paint.setColor(Color.WHITE);
+//        if(gridX ==2)
+//        canvas.drawRect(0,0,mContentWidth,mContentHeight,paint);
+//        paint.setStrokeWidth(4);
+//        canvas.drawLine(0,mContentHeight,
+//                mContentWidth,mContentHeight,paint);
+//        canvas.drawLine(mContentWidth,0,
+//                mContentWidth,mContentHeight,paint);
+//        canvas.drawLine(0,0,
+//                0,mContentHeight,paint);
+//        canvas.drawLine(0,0,mContentWidth,0,paint);
+//
+//        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.bluetooth_img);
+//        setImageBitmap(bm);
     }
     void drawAxis(Canvas canvas) {
         Paint paint = new Paint();
@@ -260,7 +281,6 @@ public class MainView extends AppCompatImageView {
                 0,mContentHeight,paint);
         canvas.drawLine(0,0,mContentWidth,0,paint);
 
-
         if(data == null){
             paint.setStrokeWidth(1);
             float mTextSize = mContentHeight/8;
@@ -272,6 +292,11 @@ public class MainView extends AppCompatImageView {
                     mContentHeight/2,paint);
 
         }
+        paint.setAlpha(127);
+        Rect a = new Rect(0,0,(int)mContentWidth,(int)mContentHeight);
+        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.bluetooth_img);
+        setImageBitmap(bm);
+        canvas.drawBitmap(bm,0,0,paint);
     }
     void drawCursor(Canvas canvas){
         Paint paint = new Paint();
@@ -310,7 +335,7 @@ public class MainView extends AppCompatImageView {
         }
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date date = new Date(time[capturedX]);
-        canvas.drawText("time:" + sdf.format(date) ,
+        canvas.drawText("time:" + "["+time[capturedX]+"]"+sdf.format(date) ,
                 (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
     }
     void calculateValue(Canvas canvas){

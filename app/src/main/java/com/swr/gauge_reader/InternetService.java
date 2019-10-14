@@ -23,7 +23,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 /**
- * Created by t4343 on 2018/2/23.
+ * Created by t4343 on 2019/9/23.
  */
 
 public class InternetService {
@@ -41,7 +41,7 @@ public class InternetService {
     public static final int MESSAGE_SET_CONNECTING =4;
     public static final int MESSAGE_SET_CONNECTED = 5;
 
-    private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
+    private final String SERVER_HOST_IP = "106.54.219.89";  //"192.168.43.72";  // "106.54.219.89";
     private final int SERVER_HOST_PORT = 9999;
     private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
     private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
