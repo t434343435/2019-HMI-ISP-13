@@ -8,7 +8,7 @@
     tools:context="com.swr.gauge_reader.OscilloscopeActivity"
     tools:showIn="@layout/activity_oscilloscope">
 
-    <com.swr.gauge_reader.MainView
+    <com.swr.gauge_reader.DataView
         android:id="@+id/oscilloscope"
         android:layout_width="match_parent"
         android:layout_height="match_parent"

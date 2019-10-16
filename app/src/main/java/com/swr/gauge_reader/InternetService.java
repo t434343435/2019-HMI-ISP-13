@@ -6,7 +6,6 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -17,7 +16,6 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -49,80 +47,25 @@ public class InternetService {
     private Context context;
     public ConnectedThread mConnectedThread;
 
-
+    private InternetService.OnInternetServiceInteractionListener mListener;
     public InternetService(final Context context){
         //这里把接受到的字符串写进去
-
+        this.context = context;
+        if (context instanceof InternetService.OnInternetServiceInteractionListener) {
+            mListener = (InternetService.OnInternetServiceInteractionListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement OnInternetServiceInteractionListener");
+        }
         mHandler = new Handler(new Handler.Callback() {
             @Override
             public boolean handleMessage(Message msg) {
-                final MainActivity activity = ((MainActivity)context);
-                Button mInternetButton = activity.mInternetButton ;
-                switch (msg.what) {
-                    case MESSAGE_INVALIDATE:
-                        MainView view = ((MainActivity)context).mainView;
-                        long[] time = msg.getData().getLongArray("time");
-                        double[] value = msg.getData().getDoubleArray("value");
-                        view.data = value;
-                        view.time = time;
-                        activity.mSaveDataButton.setEnabled(true);
-                        view.invalidate();
-                        break;
-
-                    case MESSAGE_IMAGE:
-                        ImageView imgview = ((MainActivity)context).mImageView;
-                        byte[] img = (byte[])msg.obj;
-                        Bitmap bm = BitmapFactory.decodeByteArray(img,0,img.length);
-                        imgview.setImageBitmap(bm);
-                        imgview.invalidate();
-                        break;
-
-                    case MESSAGE_TOAST:
-                        String string = msg.getData().getString("msg");
-                        Toast.makeText(InternetService.this.context,string , Toast.LENGTH_SHORT).show();
-                        TextView log = ((MainActivity)context).log;
-                        log.append(string+"\n");
-                        int scroll_amount = (int) (log.getLineCount() * log.getLineHeight()) - (log.getBottom() - log.getTop());
-                        log.scrollTo(0, scroll_amount);
-                        break;
-                    case MESSAGE_SET_TO_CONNECT:
-                            // set button states
-                            activity.mCaptureButton.setEnabled(false);
-                            activity.mInternetButton.setEnabled(true);
-                            activity.mInternetButton.setText("网络连接");
-                            //set click motion
-                            //if you click the connect button, it connects to the SERVER_HOST_IP,SERVER_HOST_PORT specified before
-                            mInternetButton.setOnClickListener(new View.OnClickListener() {
-                                @Override
-                                public void onClick(View v) {
-                                    connect(FIRST_BYTE);
-                                    popMessage("connecting...");
-                                }
-                            });
-                        break;
-                    case MESSAGE_SET_CONNECTING:
-                        mInternetButton.setEnabled(false);
-                        mInternetButton.setText("连接中");
-                        mInternetButton.setOnClickListener(null);
-                        break;
-                    case MESSAGE_SET_CONNECTED:
-                        mInternetButton.setEnabled(true);
-                        activity.mCaptureButton.setEnabled(true);
-                        mInternetButton.setText("断开连接");
-                        mInternetButton.setOnClickListener(new View.OnClickListener() {
-                            @Override
-                            public void onClick(View v) {
-                                mState = STATE_NONE;
-                                Message msg = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
-                                mHandler.sendMessage(msg);
-                            }
-                        });
-                        break;
+                if (mListener != null) {
+                    mListener.onInternetServiceInteraction(msg);
                 }
                 return true;
             }
         });
-        this.context = context;
     }
     public void connect(byte[] send){
         // If there are paired devices, add each one to the ArrayAdapter
@@ -349,6 +292,11 @@ public class InternetService {
         b.putString("msg", string );
         msg.setData(b);
         mHandler.sendMessage(msg);
+    }
+
+    public interface OnInternetServiceInteractionListener {
+        // TODO: Update argument type and name
+        void onInternetServiceInteraction(Message msg);
     }
 }
 

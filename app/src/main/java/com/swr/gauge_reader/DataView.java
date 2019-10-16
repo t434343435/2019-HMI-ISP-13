@@ -22,13 +22,16 @@ import java.util.Date;
  * Created by t4343 on 2018/9/31.
  */
 
-public class MainView extends AppCompatImageView {
-    double[] data = null;
-    long[] time = new long[0];
+public class DataView extends View {
+//    double[] data = null;
+//    long[] time = new long[0];
+
+    double[] data = {1.2,2.3};
+    long[] time = {11,22};
 
     final float INITIAL_SCALE_VALUE = (float)0.9;
-    final int STYLE_BLACK = 0;
-    final int STYLE_WHITE = 1;
+    static final int STYLE_BLACK = 0;
+    static final int STYLE_WHITE = 1;
 
     private float mContentWidth;
     private float mContentHeight;
@@ -97,7 +100,6 @@ public class MainView extends AppCompatImageView {
         @Override
         public boolean onDoubleTap(MotionEvent e) {
             resetScaleOrigin();
-            //Log.d("tuacy", "onDoubleTap");
             return true;
         }
 
@@ -115,17 +117,17 @@ public class MainView extends AppCompatImageView {
     public boolean onTouchEvent(MotionEvent event) {
         return mGestureDetector.onTouchEvent(event)||mScaleGestureDetector.onTouchEvent(event);
     }
-    public MainView(Context context) {
+    public DataView(Context context) {
         super(context);
         init(context);
     }
 
-    public MainView(Context context,AttributeSet attrs) {
+    public DataView(Context context, AttributeSet attrs) {
         super(context,attrs);
         init(context);
     }
 
-    public MainView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public DataView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context,attrs,defStyleAttr);
         init(context);
     }
@@ -292,11 +294,10 @@ public class MainView extends AppCompatImageView {
                     mContentHeight/2,paint);
 
         }
-        paint.setAlpha(127);
-        Rect a = new Rect(0,0,(int)mContentWidth,(int)mContentHeight);
-        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.bluetooth_img);
-        setImageBitmap(bm);
-        canvas.drawBitmap(bm,0,0,paint);
+//        paint.setAlpha(127);
+//        Rect a = new Rect(0,0,(int)mContentWidth,(int)mContentHeight);
+//        Bitmap bm = BitmapFactory.decodeResource(getResources(), R.drawable.osc);
+//        canvas.drawBitmap(bm,0,0,paint);
     }
     void drawCursor(Canvas canvas){
         Paint paint = new Paint();

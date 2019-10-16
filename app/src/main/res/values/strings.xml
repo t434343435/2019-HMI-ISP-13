@@ -3,4 +3,7 @@
     <string name="title_activity_hello">HelloActivity</string>
     <string name="title_activity_oscilloscope">OscilloscopeActivity</string>
     <string name="help">这是一个示波器</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 </resources>
