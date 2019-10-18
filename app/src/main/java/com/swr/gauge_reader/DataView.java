@@ -136,7 +136,7 @@ public class DataView extends View {
         mGestureDetector = new GestureDetector(context, mOnGestureListener);
         mScaleGestureDetector = new ScaleGestureDetector(context, new ScaleGestureDetector.SimpleOnScaleGestureListener(){
             @Override
-            public boolean	onScale(ScaleGestureDetector detector){
+            public boolean onScale(ScaleGestureDetector detector){
                 if(detector.getCurrentSpanX()>detector.getCurrentSpanY()){
                     float scale = detector.getScaleFactor();
                     mOriginX -= ((int)detector.getFocusX() - mOriginX)*(scale-1);
@@ -146,7 +146,6 @@ public class DataView extends View {
                     float scale = detector.getScaleFactor();
                     mOriginY -= ((int)detector.getFocusY() - mOriginY)*(scale-1);
                     mScaleY *= scale;
-
                 }
                 invalidate();
                 return true;

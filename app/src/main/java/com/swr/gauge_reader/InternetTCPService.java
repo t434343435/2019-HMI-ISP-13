@@ -1,16 +1,9 @@
 package com.swr.gauge_reader;
 
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.view.View;
-import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.TextView;
-import android.widget.Toast;
 
 
 import java.io.IOException;
@@ -24,7 +17,7 @@ import java.net.UnknownHostException;
  * Created by t4343 on 2019/9/23.
  */
 
-public class InternetService {
+public class InternetTCPService {
 
     public int mState;
 
@@ -39,35 +32,33 @@ public class InternetService {
     public static final int MESSAGE_SET_CONNECTING =4;
     public static final int MESSAGE_SET_CONNECTED = 5;
 
-    private final String SERVER_HOST_IP = "106.54.219.89";  //"192.168.43.72";  // "106.54.219.89";
+    private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
     private final int SERVER_HOST_PORT = 9999;
     private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
     private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
     public Handler mHandler;
-    private Context context;
     public ConnectedThread mConnectedThread;
 
-    private InternetService.OnInternetServiceInteractionListener mListener;
-    public InternetService(final Context context){
+    private InternetTCPService.OnInternetTCPServiceInteractionListener mListener;
+    public InternetTCPService(final Context context){
         //这里把接受到的字符串写进去
-        this.context = context;
-        if (context instanceof InternetService.OnInternetServiceInteractionListener) {
-            mListener = (InternetService.OnInternetServiceInteractionListener) context;
+        if (context instanceof InternetTCPService.OnInternetTCPServiceInteractionListener) {
+            mListener = (InternetTCPService.OnInternetTCPServiceInteractionListener) context;
         } else {
             throw new RuntimeException(context.toString()
-                    + " must implement OnInternetServiceInteractionListener");
+                    + " must implement OnInternetTCPServiceInteractionListener");
         }
         mHandler = new Handler(new Handler.Callback() {
             @Override
             public boolean handleMessage(Message msg) {
                 if (mListener != null) {
-                    mListener.onInternetServiceInteraction(msg);
+                    mListener.onInternetTCPServiceInteraction(msg);
                 }
                 return true;
             }
         });
     }
-    public void connect(byte[] send){
+    public void interact(byte[] send){
         // If there are paired devices, add each one to the ArrayAdapter
         new Thread(new ConnectThread(send)).start();
     }
@@ -79,8 +70,8 @@ public class InternetService {
         public ConnectThread(byte[] send) {
             mSend = send;
             mState = STATE_CONNECTING;
-            Message msg = mHandler.obtainMessage(MESSAGE_SET_CONNECTING);
-            mHandler.sendMessage(msg);
+//            Message msg = mHandler.obtainMessage(MESSAGE_SET_CONNECTING);
+//            mHandler.sendMessage(msg);
         }
 
         public void run() {
@@ -114,8 +105,8 @@ public class InternetService {
                 new Thread(new ConnectedThread(socket,mSend)).start();
             } else {
                 mState = STATE_NONE;
-                Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
-                mHandler.sendMessage(msg1);
+//                Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
+//                mHandler.sendMessage(msg1);
             }
         }
     }
@@ -185,8 +176,8 @@ public class InternetService {
                 } catch (IOException e) {
                     popMessage("已失去连接");
                     mState = STATE_NONE;
-                    Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
-                    mHandler.sendMessage(msg1);
+//                    Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
+//                    mHandler.sendMessage(msg1);
                     break;
                 }
 
@@ -259,7 +250,7 @@ public class InternetService {
                 } else if (state == READ_LEN) {
                     byte[] len_byte = DataTransfer.BytesSub(data,0,4);
                     for (int i = 0; i < 4; i++) {
-                        data_len = (data_len << 8) + len_byte[i];
+                        data_len = (data_len << 8) + (len_byte[i]&0xFF);
                     }
                     bytes_buffer = DataTransfer.BytesSub(data,4,data.length);
                     data = DataTransfer.BytesSub(data,4,data.length);
@@ -294,9 +285,8 @@ public class InternetService {
         mHandler.sendMessage(msg);
     }
 
-    public interface OnInternetServiceInteractionListener {
-        // TODO: Update argument type and name
-        void onInternetServiceInteraction(Message msg);
+    public interface OnInternetTCPServiceInteractionListener {
+        void onInternetTCPServiceInteraction(Message msg);
     }
 }
 

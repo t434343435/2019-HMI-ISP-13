@@ -1,12 +1,12 @@
 package com.swr.gauge_reader;
 
 import android.content.Context;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 
 /**
@@ -20,14 +20,24 @@ import android.view.ViewGroup;
 public class PictureFragment extends Fragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+//    private static final String ARG_PARAM1 = "param1";
+//    private static final String ARG_PARAM2 = "param2";
 
     // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+//    private String mParam1;
+//    private String mParam2;
 
+    public static final int START_PLAY = 0;
+    public static final int STOP_PLAY = 1;
+
+    public static final int STATE_PLAY = 0;
+    public static final int STATE_STOP = 1;
+    public int mPlayButtonState;
+
+    public PictureView mPictureView;
     private OnPictureFragmentInteractionListener mListener;
+
+    public Button mPicturePlayButton;
 
     public PictureFragment() {
         // Required empty public constructor
@@ -37,16 +47,12 @@ public class PictureFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
+     * @param args Parameter 1.
      * @return A new instance of fragment PictureFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static PictureFragment newInstance(String param1, String param2) {
+    public static PictureFragment newInstance(Bundle args) {
         PictureFragment fragment = new PictureFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
         fragment.setArguments(args);
         return fragment;
     }
@@ -54,9 +60,8 @@ public class PictureFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        mPlayButtonState = STATE_PLAY;
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
 
@@ -64,11 +69,29 @@ public class PictureFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_picture, container, false);
+        View mPictureFragmentView = inflater.inflate(R.layout.fragment_picture, container, false);
+        mPictureView = mPictureFragmentView.findViewById(R.id.pictureview);
+        mPictureView.setMode(PictureView.MODE_RECT);
+        mPicturePlayButton = mPictureFragmentView.findViewById(R.id.play_button);
+        mPicturePlayButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                if(mPlayButtonState == STATE_PLAY){
+                    onInteract(START_PLAY, null);
+                    mPicturePlayButton.setText("STOP");
+                    mPlayButtonState = STATE_STOP;
+                }else if(mPlayButtonState == STATE_STOP){
+                    onInteract(STOP_PLAY, null);
+                    mPicturePlayButton.setText("PLAY");
+                    mPlayButtonState = STATE_PLAY;
+                }
+            }
+        });
+        return mPictureFragmentView;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(int state_code, Bundle bundle) {
+    public void onInteract(int state_code, Bundle bundle) {
         if (mListener != null) {
             mListener.onPictureFragmentInteraction(state_code, bundle);
         }
