@@ -28,7 +28,7 @@ public class InternetUDPService {
     private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
     private final int SERVER_HOST_PORT = 7000;
     private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
-    private final byte[] FIRST_BYTE = DataTransfer.BytesConcact("GgRd:".getBytes(),AA);
+    private final byte[] FIRST_BYTE = Util.BytesConcact("GgRd:".getBytes(),AA);
     public Handler mHandler;
     public InternetUDPService.ConnectedThread mConnectedThread;
 
@@ -114,7 +114,7 @@ public class InternetUDPService {
                     int bytes = mDatagramPacket.getLength();
 
                     if(bytes > 0)
-                        data = DataTransfer.BytesSub(buffer,0,bytes);
+                        data = Util.BytesSub(buffer,0,bytes);
                     handleData(data);
                 } catch (IOException e) {
                     popMessage("已失去连接");
@@ -145,14 +145,14 @@ public class InternetUDPService {
         public void handleUDPack(byte state_code,byte[] pack) {
             switch(state_code){
                 case SC_DATA:
-                    int len = DataTransfer.Bytes2Int(DataTransfer.BytesSub(pack,0,4));
+                    int len = Util.Bytes2Int(Util.BytesSub(pack,0,4));
                     long[] time = new long[len];
                     double[] value = new double[len];
                     for(int i = 0; i < len; i++){
                         time[i] =
-                                DataTransfer.Bytes2Long(DataTransfer.BytesSub(pack,i * 16 + 4, i * 16 + 12));
+                                Util.Bytes2Long(Util.BytesSub(pack,i * 16 + 4, i * 16 + 12));
                         value[i] =
-                                DataTransfer.Bytes2Double(DataTransfer.BytesSub(pack,i * 16 + 12, i * 16 + 20));
+                                Util.Bytes2Double(Util.BytesSub(pack,i * 16 + 12, i * 16 + 20));
 
                     }
                     Message msg = mHandler.obtainMessage(MESSAGE_INVALIDATE);
@@ -163,7 +163,7 @@ public class InternetUDPService {
                     mHandler.sendMessage(msg);
                     break;
                 case SC_IMAGE:
-                    byte[] image = DataTransfer.BytesSub(pack,6,pack.length);
+                    byte[] image = Util.BytesSub(pack,6,pack.length);
                     Message msg1 = mHandler.obtainMessage(MESSAGE_IMAGE);
                     msg1.obj = image;
                     mHandler.sendMessage(msg1);
@@ -172,27 +172,27 @@ public class InternetUDPService {
         }
 
         private synchronized boolean handleData(byte[] data) {
-            data = DataTransfer.BytesConcact(bytes_buffer, data);
+            data = Util.BytesConcact(bytes_buffer, data);
             // 状态机 获取帧头后，将帧传送给handle_udp_data(data)处理
             bytes_buffer = new byte[1];
             while(bytes_buffer.length != 0) {
                 if (state == FIND_HEAD) {
-                    int index = DataTransfer.BytesFind(data,HEAD);
+                    int index = Util.BytesFind(data,HEAD);
                     if (index <= -1) {
                         bytes_buffer = new byte[0];
                         state = FIND_HEAD;
                     } else {
-                        bytes_buffer = DataTransfer.BytesSub(data,index + HEAD.length,data.length);
-                        data = DataTransfer.BytesSub(data,index + HEAD.length,data.length);
+                        bytes_buffer = Util.BytesSub(data,index + HEAD.length,data.length);
+                        data = Util.BytesSub(data,index + HEAD.length,data.length);
                         state = READ_LEN;
                     }
                 } else if (state == READ_LEN) {
-                    byte[] len_byte = DataTransfer.BytesSub(data,0,4);
+                    byte[] len_byte = Util.BytesSub(data,0,4);
                     for (int i = 0; i < 4; i++) {
                         data_len = (data_len << 8) + (len_byte[i]&0xFF);
                     }
-                    bytes_buffer = DataTransfer.BytesSub(data,4,data.length);
-                    data = DataTransfer.BytesSub(data,4,data.length);
+                    bytes_buffer = Util.BytesSub(data,4,data.length);
+                    data = Util.BytesSub(data,4,data.length);
                     data_buffer = new byte[0];
                     state = READ_DATA;
                     received_len = 0;
@@ -200,15 +200,15 @@ public class InternetUDPService {
                     received_len = received_len + data.length;
                     if (received_len < data_len) {
                         bytes_buffer = new byte[0];
-                        data_buffer = DataTransfer.BytesConcact(data_buffer, data);
+                        data_buffer = Util.BytesConcact(data_buffer, data);
                         state = READ_DATA;
                     } else {
-                        bytes_buffer = DataTransfer.BytesSub(data,data_len - received_len + data.length, data.length);
-                        data_buffer = DataTransfer.BytesConcact(data_buffer,
-                                DataTransfer.BytesSub(data,0, data_len - received_len + data.length));
+                        bytes_buffer = Util.BytesSub(data,data_len - received_len + data.length, data.length);
+                        data_buffer = Util.BytesConcact(data_buffer,
+                                Util.BytesSub(data,0, data_len - received_len + data.length));
                         state = FIND_HEAD;
                         cancel();
-                        handleUDPack(data_buffer[0],DataTransfer.BytesSub(data_buffer,1,data_buffer.length));
+                        handleUDPack(data_buffer[0], Util.BytesSub(data_buffer,1,data_buffer.length));
                         return true;
                     }
                 }

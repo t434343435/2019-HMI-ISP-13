@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,16 +32,14 @@ import static android.content.Context.MODE_PRIVATE;
  * create an instance of this fragment.
  */
 public class DataFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     public static final String MESSAGE = "MSG";
 
     public static final int TOAST_MESSAGE = 1;
     public static final int CHECK_WAVE = 2;
-    // TODO: Rename and change types of parameters
     public DataView mDataView;
 
-    public Button mInternetButton;
+//    public Button mInternetButton;
     public Button mDeleteWaveButton;
     public Button mHistoricalDataButton;
     public Button mSaveDataButton;
@@ -86,7 +85,7 @@ public class DataFragment extends Fragment {
         View mDataFragmentView = inflater.inflate(R.layout.fragment_data, container, false);
         mDataView = mDataFragmentView.findViewById(R.id.dataview);
                 // set the delete wave function
-        mInternetButton = mDataFragmentView.findViewById(R.id.internet_button);
+//        mInternetButton = mDataFragmentView.findViewById(R.id.internet_button);
         mDeleteWaveButton = mDataFragmentView.findViewById(R.id.delete_wave);
         mDeleteWaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -198,9 +197,12 @@ public class DataFragment extends Fragment {
                             byte []buffer = new byte[len];
                             fis.read(buffer);
                             String s = new String(buffer);
+
                             String [] ss = s.split(" ");
                             mDataView.data = new double[ss.length];
+                            mDataView.time = new long[ss.length];
                             for(int i = 0;i<ss.length;i++){
+                                Log.d("Tag",ss[i]);
                                 String[] res = ss[i].split(":");
                                 mDataView.time[i] = Long.parseLong(res[0]);
                                 mDataView.data[i] = Double.parseDouble(res[1]);

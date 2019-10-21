@@ -1,6 +1,8 @@
 package com.swr.gauge_reader;
 
-public class DataTransfer {
+import android.graphics.RectF;
+
+public class Util {
     public static byte[] Double2Bytes(double data){
         long value = Double.doubleToRawLongBits(data);
         byte[] byteRet = new byte[8];
@@ -75,4 +77,5 @@ public class DataTransfer {
             res[i] = bytes[i + start_index];
         return  res;
     }
+
 }
