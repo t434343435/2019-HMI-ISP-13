@@ -23,11 +23,8 @@ import java.util.Date;
  */
 
 public class DataView extends View {
-//    double[] data = null;
-//    long[] time = new long[0];
-
-    double[] data = {1.2,2.3};
-    long[] time = {11,22};
+    double[] data = new double[0];
+    long[] time = new long[0];
 
     final float INITIAL_SCALE_VALUE = (float)0.9;
     static final int STYLE_BLACK = 0;
@@ -54,7 +51,7 @@ public class DataView extends View {
         @Override
         public boolean onSingleTapUp(MotionEvent e) {
             invalidate();
-            if(data == null || time == null)return false;
+            if(data.length < 2 || time.length < 2)return false;
             if(data.length == time.length) {
                 int mDataSize = data.length;
                 int x = (int) ((e.getX() - mOriginX) / mContentWidth * (mDataSize - 1) / mScaleX);
@@ -177,7 +174,7 @@ public class DataView extends View {
         super.onDraw(canvas);
 
         drawStart(canvas);
-        if(data!=null) {
+        if(data.length > 1) {
             drawAxis(canvas);
             drawData(canvas);
             if ((capturedX < data.length) && (capturedX >= 0)) drawCursor(canvas);
@@ -282,7 +279,7 @@ public class DataView extends View {
                 0,mContentHeight,paint);
         canvas.drawLine(0,0,mContentWidth,0,paint);
 
-        if(data == null){
+        if(data.length < 1){
             paint.setStrokeWidth(1);
             float mTextSize = mContentHeight/8;
 

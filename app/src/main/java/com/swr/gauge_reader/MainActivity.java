@@ -2,6 +2,8 @@ package com.swr.gauge_reader;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Message;
 import android.support.design.widget.TabLayout;
@@ -9,7 +11,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
-import android.util.Log;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -38,8 +39,14 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
     List<String> mTitle;
     List<Fragment> mFragment;
 
-    private final byte[] AA = {0x00,0x00,0x00,0x01,(byte)0x81};
-    private final byte[] FIRST_BYTE = Util.BytesConcact("GgRd:".getBytes(),AA);
+    private static final byte[] HEAD = "GgRd:".getBytes();
+    private static final byte[] REQUEST_DATA = {0x01,0x00,0x00,0x00,(byte)0x80};
+    private static final byte[] REQUEST_IMAGE = {0x01,0x00,0x00,0x00,(byte)0x81};
+    private static final byte[] SET_TEMPLATE = {(byte)0x82};
+    private static final byte[] CLEAR_TEMPLATE = {0x01,0x00,0x00,0x00,(byte)0x83};
+    private static final byte[] REQUEST_IMAGE_CODE = Util.BytesConcat(HEAD, REQUEST_IMAGE);
+    private static final byte[] REQUEST_DATA_CODE = Util.BytesConcat(HEAD, REQUEST_DATA);
+    private static final byte[] CLEAR_TEMPLATE_CODE = Util.BytesConcat(HEAD, CLEAR_TEMPLATE);
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -82,10 +89,9 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
 //        loadSharedPreference();
         log = findViewById(R.id.log);
         log.setMovementMethod(new ScrollingMovementMethod());
-//
         mInternetTCPService = new InternetTCPService(this);
-        mInternetUDPService = new InternetUDPService(this);
-        mInternetUDPService.connect();
+//        mInternetUDPService = new InternetUDPService(this);
+//        mInternetUDPService.connect();
     }
     
 //    private void loadSharedPreference(){
@@ -117,64 +123,36 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
         Button mSaveDataButton = ((DataFragment) mFragment.get(INDEX_DATA)).mSaveDataButton;
         DataView view = ((DataFragment) mFragment.get(INDEX_DATA)).mDataView;
         if (msg.what == InternetTCPService.MESSAGE_INVALIDATE) {
-            long[] time = msg.getData().getLongArray("time");
             double[] value = msg.getData().getDoubleArray("value");
-            view.data = value;
-            view.time = time;
+            view.data = Util.DoublesConcat(view.data, value[0]);
+            view.time = Util.LongsConcat(view.time, System.currentTimeMillis());
             mSaveDataButton.setEnabled(true);
             view.invalidate();
-
         } else if (msg.what == InternetTCPService.MESSAGE_IMAGE) {
             PictureView imgview = ((PictureFragment) mFragment.get(INDEX_PICTURE)).mPictureView;
-            int playButtonState = ((PictureFragment) mFragment.get(INDEX_PICTURE)).mPlayButtonState;
+            PictureFragment fragment = (PictureFragment) mFragment.get(INDEX_PICTURE);
             byte[] img = (byte[]) msg.obj;
-            GaugeReader gr = new GaugeReader();
             BitmapFactory.Options op = new BitmapFactory.Options();
             op.inScaled = false;
-            Bitmap bm = gr.process(BitmapFactory.decodeByteArray(img, 0, img.length,op),1000);
+            Bitmap bm = BitmapFactory.decodeByteArray(img, 0, img.length,op);
             imgview.setPicture(bm);
+            ArrayList<PictureView.TagRect> tgl = (ArrayList<PictureView.TagRect>)imgview.tagRectList;
+            double[] value = msg.getData().getDoubleArray("value");
+            for(int i = 0; i < value.length; i++){
+                float gc = fragment.getNeedleLength(i);
+                RectF vector = fragment.getGaugeCenter(i);
+                vector.right -= (float) Math.cos(value[i]*Math.PI/180)*gc;
+                vector.bottom -= (float) Math.sin(value[i]*Math.PI/180)*gc;
+                imgview.setTagVector(i,"",vector, Color.GREEN);
+            }
+            for(int i = 0; i< value.length; i++){
+                tgl.get(i).setText(fragment.getGaugeName(i) + String.format(":%.2f",value[i]));
+            }
             imgview.invalidate();
-            if (playButtonState == PictureFragment.STATE_STOP)
-                mInternetTCPService.interact(FIRST_BYTE);
-
         } else if (msg.what == InternetTCPService.MESSAGE_TOAST) {
-
             String string = msg.getData().getString("msg");
             toastMessage(string);
         }
-//        }else if (msg.what == InternetTCPService.MESSAGE_SET_TO_CONNECT) {
-//
-//            // set button states
-//            mCaptureButton.setEnabled(false);
-//            mInternetButton.setEnabled(true);
-//            mInternetButton.setText("网络连接");
-//            //set click motion
-//            //if you click the interact button, it connects to the SERVER_HOST_IP,SERVER_HOST_PORT specified before
-//            mInternetButton.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    mInternetTCPService.interact(FIRST_BYTE);
-//                    toastMessage("connecting...");
-//                }
-//            });
-//        }else if (msg.what == InternetTCPService.MESSAGE_SET_CONNECTING) {
-//            mInternetButton.setEnabled(false);
-//            mInternetButton.setText("连接中");
-//            mInternetButton.setOnClickListener(null);
-//        }else if (msg.what == InternetTCPService.MESSAGE_SET_CONNECTED) {
-//            mInternetButton.setEnabled(true);
-//            ((DataFragment)mFragment.get(INDEX_DATA)).mCaptureButton.setEnabled(true);
-//            mInternetButton.setText("断开连接");
-//            mInternetButton.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    mInternetTCPService.mState = InternetTCPService.STATE_NONE;
-//                    Message msg = mInternetTCPService.mHandler.obtainMessage(InternetTCPService.MESSAGE_SET_TO_CONNECT);
-//                    mInternetTCPService.mHandler.sendMessage(msg);
-//                }
-//            });
-//        }
-
     }
 
     @Override
@@ -185,12 +163,10 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
         }else if (msg.what == InternetTCPService.MESSAGE_IMAGE) {
             PictureView imgview = ((PictureFragment)mFragment.get(INDEX_PICTURE)).mPictureView;
             byte[] img = (byte[]) msg.obj;
-            GaugeReader gr = new GaugeReader();
             BitmapFactory.Options op = new BitmapFactory.Options();
             op.inScaled = false;
-            Bitmap bm = gr.process(BitmapFactory.decodeByteArray(img, 0, img.length,op),1000);
-            imgview.setPicture(bm);
             imgview.invalidate();
+
         }
     }
     @Override
@@ -198,18 +174,29 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
         if(state_code == DataFragment.TOAST_MESSAGE){
             toastMessage(bundle.getString(DataFragment.MESSAGE," "));
         }else if(state_code == DataFragment.CHECK_WAVE) {
-
+            mInternetTCPService.interact(REQUEST_DATA_CODE);
         }
     }
 
     @Override
     public void onPictureFragmentInteraction(int state_code, Bundle bundle) {
-        if(state_code == PictureFragment.START_PLAY){
-            mInternetTCPService.interact(FIRST_BYTE);
-        }else if(state_code == PictureFragment.STOP_PLAY){
-//            mInternetTCPService.interact(FIRST_BYTE);
-        }else if(state_code == PictureFragment.TOAST_MESSAGE) {
+        if(state_code == PictureFragment.TOAST_MESSAGE) {
             toastMessage(bundle.getString(PictureFragment.MESSAGE, " "));
+        }
+        else if(state_code == PictureFragment.PLAY_FRAME) {
+//            mInternetTCPService.interact(REQUEST_DATA_CODE);
+            mInternetTCPService.interact(REQUEST_IMAGE_CODE);
+        }else if(state_code == PictureFragment.SET_TEMPLATE) {
+            if(mInternetTCPService.mState == InternetTCPService.STATE_NONE){
+                byte [] code = bundle.getByteArray(PictureFragment.MSG_SET_TPL);
+                code = Util.BytesConcat(SET_TEMPLATE,code);
+                byte [] head = Util.BytesConcat(HEAD,Util.Int2Bytes(code.length));
+                ((DataFragment) mFragment.get(INDEX_DATA)).waveList.clear();
+                mInternetTCPService.interact(Util.BytesConcat(head,code));
+            }
+        }else if(state_code == PictureFragment.CLEAR_TEMPLATE) {
+            if(mInternetTCPService.mState == InternetTCPService.STATE_NONE)
+                mInternetTCPService.interact(CLEAR_TEMPLATE_CODE);
         }
     }
 

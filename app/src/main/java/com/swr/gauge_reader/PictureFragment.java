@@ -2,17 +2,12 @@ package com.swr.gauge_reader;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentPagerAdapter;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -23,9 +18,6 @@ import android.widget.RadioButton;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.swr.gauge_reader.DataFragment.MESSAGE;
-import static com.swr.gauge_reader.DataFragment.TOAST_MESSAGE;
 
 
 /**
@@ -39,27 +31,31 @@ import static com.swr.gauge_reader.DataFragment.TOAST_MESSAGE;
 public class PictureFragment extends Fragment{
     public static final String MESSAGE = "MSG";
 
-    public static final int TOAST_MESSAGE = 3;
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-//    public static final String ARG_PARAM1 = "param1";
-//    public static final String ARG_PARAM2 = "param2";
+
 
     // TODO: Rename and change types of parameters
-//    public String mParam1;
-//    public String mParam2;
 
     public static final int START_PLAY = 0;
     public static final int STOP_PLAY = 1;
+    public static final int PLAY_FRAME =2;
+    public static final int SET_TEMPLATE =3;
+    public static final int CLEAR_TEMPLATE =4;
+    public static final int TOAST_MESSAGE = 5;
 
     public static final int STATE_PLAY = 0;
     public static final int STATE_STOP = 1;
     public int mPlayButtonState;
 
+    public static final String MSG_SET_TPL = "SET_TEMPLATE";
+    
     public PictureView mPictureView;
+    public Button setTemplateButton;
+    public Button clearTemplateButton;
     public OnPictureFragmentInteractionListener mListener;
 
     public Button mPicturePlayButton;
 
+    List<TemplateVariable> templateVariables;
     public PictureFragment() {
         // Required empty public constructor
     }
@@ -84,16 +80,55 @@ public class PictureFragment extends Fragment{
         mPlayButtonState = STATE_PLAY;
         if (getArguments() != null) {
         }
+        templateVariables = new ArrayList<>();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View mPictureFragmentView = inflater.inflate(R.layout.fragment_picture, container, false);
+        final View mPictureFragmentView = inflater.inflate(R.layout.fragment_picture, container, false);
         mPictureView = mPictureFragmentView.findViewById(R.id.pictureview);
         mPictureView.setMode(PictureView.MODE_RECT);
         mPicturePlayButton = mPictureFragmentView.findViewById(R.id.play_button);
+        setTemplateButton = mPictureFragmentView.findViewById(R.id.set_template);
+        clearTemplateButton = mPictureFragmentView.findViewById(R.id.clear_template);
+        setTemplateButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                Bundle b = new Bundle();
+                int size = templateVariables.size();
+                byte [] bytes =  Util.Int2Bytes(size);
+                for(int i = 0; i < size; i++){
+                    bytes = Util.BytesConcat(bytes, templateVariables.get(i).getBytes());
+                }
+                b.putByteArray(MSG_SET_TPL, bytes);
+                onInteract(SET_TEMPLATE, b);
+            }
+        });
+        clearTemplateButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                mPictureView.clearRectList();
+                mPictureView.clearVectorList();
+                templateVariables.clear();
+                onInteract(CLEAR_TEMPLATE, null);
+            }
+        });
+        mPicturePlayButton.setOnClickListener(new Button.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                if(mPlayButtonState == STATE_PLAY){
+                    mPicturePlayButton.setText("STOP");
+                    mPlayButtonState = STATE_STOP;
+                    new Thread(new PlayingThread(30)).start();
+                }else if(mPlayButtonState == STATE_STOP){
+                    mPicturePlayButton.setText("PLAY");
+                    mPlayButtonState = STATE_PLAY;
+                }
+            }
+        });
+        clearTemplateButton = mPicturePlayButton.findViewById(R.id.clear_template);
         mPictureView.setOnRectClickListener(new PictureView.OnRectClickListener(){
             @Override
             public void onVectorUpdate(RectF r) {
@@ -118,7 +153,7 @@ public class PictureFragment extends Fragment{
                         final RadioButton gaugeMinButton = dialogView.findViewById(R.id.gauge_min_button);
                         final RadioButton gaugeMaxButton = dialogView.findViewById(R.id.gauge_max_button);
 
-                        Rect pictureRect = mPictureView.subPicture(selectedRect);
+                        final Rect pictureRect = mPictureView.subPicture(selectedRect);
                         pictureView.setPicture(Bitmap.createBitmap(mPictureView.getPicture(),
                                 pictureRect.left,pictureRect.top,pictureRect.width(),pictureRect.height()));
                         pictureView.setMode(PictureView.MODE_VECTOR);
@@ -136,8 +171,6 @@ public class PictureFragment extends Fragment{
                             public void onRectClick(MotionEvent e) {
                             }
                         });
-
-//                        gaugeMaxButton.setScrollBarStyle();
 
                         builder.setIcon(R.drawable.osc);
                         builder.setTitle("Gauge Template");
@@ -177,11 +210,51 @@ public class PictureFragment extends Fragment{
                                 double min = Double.parseDouble(gaugeMin);
                                 double max = Double.parseDouble(gaugeMax);
                                 double minTh = Double.parseDouble(gaugeThMin);
-                                double maxTh = Double.parseDouble(gaugeThMin);
+                                double maxTh = Double.parseDouble(gaugeThMax);
                                 if(min > max){
                                     toastMessage("Gauge minimum value must be less than Gauge maximum value!");
                                     return;
                                 }
+
+                                TemplateVariable tv = new TemplateVariable();
+                                tv.name =  name;
+                                tv.min =  min;
+                                tv.max =  max;
+                                tv.min_threshold =  minTh;
+                                tv.max_threshold =  maxTh;
+                                tv.region = new Rect(pictureRect);
+                                tv.region_in_pic = new RectF(selectedRect);
+                                PictureView.TagVector minTagVector;
+                                PictureView.TagVector maxTagVector;
+                                Rect minVec;
+                                Rect maxVec;
+                                try {
+                                    minTagVector = pictureView.getTagVector(PictureView.TagVector.MIN);
+                                    maxTagVector = pictureView.getTagVector(PictureView.TagVector.MAX);
+                                    minVec = pictureView.subPicture(minTagVector.getVector());
+                                    maxVec = pictureView.subPicture(maxTagVector.getVector());
+                                }catch (NullPointerException e){
+                                    e.printStackTrace();
+                                    toastMessage("Please select minimum/maximum needles");
+                                    return;
+                                }
+
+                                RectF minV = mPictureView.subPicture(minVec);
+                                RectF maxV = mPictureView.subPicture(maxVec);
+                                tv.center_x = (minV.left + maxV.left)/2;
+                                tv.center_y = (minV.top + maxV.top)/2;
+                                float length1 = (float)Math.sqrt(Math.pow(minV.right - tv.center_x,2) + Math.pow(minV.bottom - tv.center_y,2));
+                                float length2 = (float)Math.sqrt(Math.pow(maxV.right - tv.center_x,2) + Math.pow(maxV.bottom - tv.center_y,2));
+                                tv.needle_length = (length1 + length2)/2;
+                                tv.center_min_x = minVec.left + pictureRect.left;
+                                tv.center_min_y = minVec.top + pictureRect.top;
+                                tv.center_max_x = maxVec.left + pictureRect.left;
+                                tv.center_max_y = maxVec.top + pictureRect.top;
+                                tv.end_min_x = minVec.right + pictureRect.left;
+                                tv.end_min_y = minVec.bottom + pictureRect.top;
+                                tv.end_max_x = maxVec.right + pictureRect.left;
+                                tv.end_max_y = maxVec.bottom + pictureRect.top;
+                                templateVariables.add(tv);
                                 mPictureView.setTagRect(0,name,selectedRect,Color.BLUE);
                                 mPictureView.invalidate();
                                 dialog.dismiss();
@@ -189,20 +262,6 @@ public class PictureFragment extends Fragment{
                         });
 
                     }
-                }
-            }
-        });
-        mPicturePlayButton.setOnClickListener(new Button.OnClickListener(){
-            @Override
-            public void onClick(View v) {
-                if(mPlayButtonState == STATE_PLAY){
-                    onInteract(START_PLAY, null);
-                    mPicturePlayButton.setText("STOP");
-                    mPlayButtonState = STATE_STOP;
-                }else if(mPlayButtonState == STATE_STOP){
-                    onInteract(STOP_PLAY, null);
-                    mPicturePlayButton.setText("PLAY");
-                    mPlayButtonState = STATE_PLAY;
                 }
             }
         });
@@ -255,20 +314,85 @@ public class PictureFragment extends Fragment{
             mListener.onPictureFragmentInteraction(TOAST_MESSAGE, bundle);
         }
     }
-    class TemplateVariable{
+
+    private class PlayingThread extends Thread {
+        private long delay;
+        public PlayingThread(long millis) {
+            delay = millis;
+        }
+        public void run() {
+            while (mPlayButtonState == STATE_STOP) {
+                try {
+                    sleep(delay);//毫秒
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                onInteract(PLAY_FRAME, null);
+            }
+        }
+
+        public void setDelay(long delay) {
+            this.delay = delay;
+        }
+    }
+
+    public RectF getGaugeCenter(int index){
+        TemplateVariable tv = templateVariables.get(index);
+        float cx = tv.region_in_pic.left + tv.center_x;
+        float cy = tv.region_in_pic.top + tv.center_y;
+        return new RectF(cx,cy,cx,cy);
+    }
+
+    public float getNeedleLength(int index){
+        TemplateVariable tv = templateVariables.get(index);
+        return tv.needle_length;
+    }
+    public RectF getTemplateRegion(int index){
+        TemplateVariable tv = templateVariables.get(index);
+        return tv.region_in_pic;
+    }
+    public String getGaugeName(int index){
+        return templateVariables.get(index).name;
+    }
+    class TemplateVariable {
         public String name;
 
-        public RectF region;
+        public Rect region;
+        public RectF region_in_pic;
+        public int center_min_x;
+        public int center_min_y;
+        public int center_max_x;
+        public int center_max_y;
+
+        public int end_min_x;
+        public int end_min_y;
+        public int end_max_x;
+        public int end_max_y;
+        
+        public double min;
+        public double min_threshold;
+        public double max;
+        public double max_threshold;
 
         public float center_x;
         public float center_y;
+        public float needle_length;
 
-        public float min;
-        public float min_ang;
-        public float min_threshold;
-        public float max;
-        public float max_ang;
-        public float max_threshold;
-
+        public byte[] getBytes(){
+            byte[] res = new byte[0];
+            res = Util.BytesConcat(res,Util.Int2Bytes(region.left));
+            res = Util.BytesConcat(res,Util.Int2Bytes(region.top));
+            res = Util.BytesConcat(res,Util.Int2Bytes(region.right));
+            res = Util.BytesConcat(res,Util.Int2Bytes(region.bottom));
+            res = Util.BytesConcat(res,Util.Int2Bytes(center_min_x));
+            res = Util.BytesConcat(res,Util.Int2Bytes(center_min_y));
+            res = Util.BytesConcat(res,Util.Int2Bytes(end_min_x));
+            res = Util.BytesConcat(res,Util.Int2Bytes(end_min_y));
+            res = Util.BytesConcat(res,Util.Int2Bytes(center_max_x));
+            res = Util.BytesConcat(res,Util.Int2Bytes(center_max_y));
+            res = Util.BytesConcat(res,Util.Int2Bytes(end_max_x));
+            res = Util.BytesConcat(res,Util.Int2Bytes(end_max_y));
+            return res;
+        }
     }
 }

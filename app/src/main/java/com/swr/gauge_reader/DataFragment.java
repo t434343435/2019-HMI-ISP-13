@@ -3,6 +3,7 @@ package com.swr.gauge_reader;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.database.DataSetObserver;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -10,8 +11,12 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Spinner;
+import android.widget.SpinnerAdapter;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,6 +24,7 @@ import java.io.FileOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -39,12 +45,14 @@ public class DataFragment extends Fragment {
     public static final int CHECK_WAVE = 2;
     public DataView mDataView;
 
-//    public Button mInternetButton;
     public Button mDeleteWaveButton;
     public Button mHistoricalDataButton;
     public Button mSaveDataButton;
     public Button mCaptureButton;
-    public Button mOptionsButton;
+    public Spinner mSpinner;
+    public int captureButtonState;
+    public static final int STATE_IDLE = 0;
+    public static final int STATE_CONTI = 1;
 
     File[] files;
     ArrayList<Integer> yourChoices = new ArrayList<>();
@@ -52,6 +60,8 @@ public class DataFragment extends Fragment {
     boolean [] initChoiceSets;
 
     private OnDataFragmentInteractionListener mListener;
+
+    List<double[]> waveList;
 
     public DataFragment() {
         // Required empty public constructor
@@ -74,18 +84,31 @@ public class DataFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-        }
+        waveList = new ArrayList<>();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        View mDataFragmentView = inflater.inflate(R.layout.fragment_data, container, false);
+        final View mDataFragmentView = inflater.inflate(R.layout.fragment_data, container, false);
+        mSpinner = mDataFragmentView.findViewById(R.id.spinner);
+        final String[] spinnerItems = {"张三","李四","王二麻子"};
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getContext(), R.layout.item_select, spinnerItems);
+        arrayAdapter.setDropDownViewResource(R.layout.item_drop);
+        mSpinner.setAdapter(arrayAdapter);
+        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                //选择列表项的操作
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+                //未选中时候的操作
+            }
+        });
         mDataView = mDataFragmentView.findViewById(R.id.dataview);
-                // set the delete wave function
-//        mInternetButton = mDataFragmentView.findViewById(R.id.internet_button);
         mDeleteWaveButton = mDataFragmentView.findViewById(R.id.delete_wave);
         mDeleteWaveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -173,7 +196,7 @@ public class DataFragment extends Fragment {
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
                 builder.setIcon(R.drawable.osc);
                 ArrayAdapter<String> mWaveArrayAdapter =
-                        new ArrayAdapter<String>(getContext(), R.layout.device_name);
+                        new ArrayAdapter<String>(getContext(), R.layout.item_drop);
                 File file=new File(getContext().getFilesDir().getAbsolutePath());
                 files=file.listFiles();
                 try {
@@ -261,14 +284,27 @@ public class DataFragment extends Fragment {
 
         // set the capture button function
         mCaptureButton = mDataFragmentView.findViewById(R.id.capture_wave);
-        mCaptureButton.setOnClickListener(new View.OnClickListener() {
+        mCaptureButton.setOnClickListener(new Button.OnClickListener() {
             public void onClick(View v) {
-                onInteract(CHECK_WAVE,null);
+                if(captureButtonState == STATE_IDLE){
+                    onInteract(CHECK_WAVE,null);
+                }else if(captureButtonState == STATE_CONTI){
+                    captureButtonState = STATE_IDLE;
+                }
             }
         });
         mCaptureButton.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View v) {
+                if(captureButtonState == STATE_IDLE){
+                    EditText delayEdit = mDataFragmentView.findViewById(R.id.delay_time_edit);
+                    String str = delayEdit.getText().toString();
+                    if(!str.equals("")) {
+                        captureButtonState = STATE_CONTI;
+                        new Thread(new CapturingThread(Integer.parseInt(str))).start();
+                    }
+                }else if(captureButtonState == STATE_CONTI){
 
+                }
                 return true;
             }
         });
@@ -307,6 +343,24 @@ public class DataFragment extends Fragment {
         mListener = null;
     }
 
+    private class CapturingThread extends Thread {
+        private long delay;
+
+        public CapturingThread(long millis) {
+            delay = millis;
+        }
+
+        public void run() {
+            while (captureButtonState == STATE_CONTI) {
+                try {
+                    sleep(delay);//毫秒
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                onInteract(CHECK_WAVE, null);
+            }
+        }
+    }
     /**
      * This interface must be implemented by activities that contain this
      * fragment to allow an interaction in this fragment to be communicated

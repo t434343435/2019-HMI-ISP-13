@@ -28,7 +28,7 @@ public class InternetUDPService {
     private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
     private final int SERVER_HOST_PORT = 7000;
     private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
-    private final byte[] FIRST_BYTE = Util.BytesConcact("GgRd:".getBytes(),AA);
+    private final byte[] FIRST_BYTE = Util.BytesConcat("GgRd:".getBytes(),AA);
     public Handler mHandler;
     public InternetUDPService.ConnectedThread mConnectedThread;
 
@@ -172,7 +172,7 @@ public class InternetUDPService {
         }
 
         private synchronized boolean handleData(byte[] data) {
-            data = Util.BytesConcact(bytes_buffer, data);
+            data = Util.BytesConcat(bytes_buffer, data);
             // 状态机 获取帧头后，将帧传送给handle_udp_data(data)处理
             bytes_buffer = new byte[1];
             while(bytes_buffer.length != 0) {
@@ -200,11 +200,11 @@ public class InternetUDPService {
                     received_len = received_len + data.length;
                     if (received_len < data_len) {
                         bytes_buffer = new byte[0];
-                        data_buffer = Util.BytesConcact(data_buffer, data);
+                        data_buffer = Util.BytesConcat(data_buffer, data);
                         state = READ_DATA;
                     } else {
                         bytes_buffer = Util.BytesSub(data,data_len - received_len + data.length, data.length);
-                        data_buffer = Util.BytesConcact(data_buffer,
+                        data_buffer = Util.BytesConcat(data_buffer,
                                 Util.BytesSub(data,0, data_len - received_len + data.length));
                         state = FIND_HEAD;
                         cancel();

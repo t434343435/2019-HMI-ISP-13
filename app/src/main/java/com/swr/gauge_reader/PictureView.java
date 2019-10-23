@@ -1,22 +1,16 @@
 package com.swr.gauge_reader;
 
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.BitmapRegionDecoder;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.text.TextPaint;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.GestureDetector;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -31,9 +25,7 @@ public class PictureView extends View {
     private Bitmap mPicture;
     
     private int mode;
-    public static final int MODE_NONE = 0;
     public static final int MODE_RECT = 1;
-    public static final int MODE_DOT = 2;
     public static final int MODE_VECTOR = 3;
 
     private RectF pictureRegion;
@@ -61,6 +53,7 @@ public class PictureView extends View {
             if(mode == MODE_RECT) {
                 if (mOnRectClickListener != null) {
                     mOnRectClickListener.onRectClick(e);
+                    selectedRect.set(-10.0f,-10.0f,-10.0f,-10.0f);
                 }
             }
             return true;
@@ -127,7 +120,7 @@ public class PictureView extends View {
         if(event.getAction() == MotionEvent.ACTION_UP && mode == MODE_VECTOR)
             if(mOnRectClickListener != null && (selectedRect.height() != 0 && selectedRect.width() != 0)) {
                 mOnRectClickListener.onVectorUpdate(selectedRect);
-                selectedRect.set(0,0,0,0);
+                selectedRect.set(-10.0f,-10.0f,-10.0f,-10.0f);
                 invalidate();
             }
         return mGestureDetector.onTouchEvent(event);
@@ -150,8 +143,8 @@ public class PictureView extends View {
 
     private void init(Context context, AttributeSet attrs, int defStyle) {
         // Load attributes
-        pictureRegion = new RectF();
-        selectedRect = new RectF();
+        pictureRegion = new RectF(-10.0f,-10.0f,-10.0f,-10.0f);
+        selectedRect = new RectF(-10.0f,-10.0f,-10.0f,-10.0f);
         bound = new Rect();
         tagRectList = new ArrayList<>();
         tagVectorList = new ArrayList<>();
@@ -182,6 +175,11 @@ public class PictureView extends View {
             drawRect(canvas,contentWidth,contentHeight);
         if(mode == MODE_VECTOR)
             drawVector(canvas,selectedRect,Color.RED,contentWidth,contentHeight);
+        Paint paint = new Paint();
+        paint.setStrokeWidth((contentHeight+contentWidth)/500);
+        paint.setColor(Color.WHITE);
+        paint.setStyle(Paint.Style.STROKE);
+        canvas.drawRect(pictureRegion,paint);
     }
 
     public void drawBitmap(Canvas canvas, int contentWidth,int contentHeight){
@@ -197,9 +195,6 @@ public class PictureView extends View {
                         (float)contentWidth/2+contentHeight/scale/2, contentHeight);
             }
             canvas.drawBitmap(mPicture, null, pictureRegion, paint);
-            paint.setColor(Color.WHITE);
-            paint.setStyle(Paint.Style.STROKE);
-            canvas.drawRect(pictureRegion,paint);
 //            Bitmap.createBitmap()
         }
     }
@@ -300,37 +295,38 @@ public class PictureView extends View {
             paint.setStrokeWidth(stokeWidth);
             paint.setTextSize((contentWidth + contentHeight) / 50);
             drawVector(canvas,region,color,contentWidth,contentHeight);
+            if(tag != "") {
+                int maxWidth = 0;
+                int textHeight = 0;
+                String[] tag_in_line = tag.split("\n");
+                for (int j = 0; j < tag_in_line.length; j++) {
+                    paint.getTextBounds(tag_in_line[j], 0, tag_in_line[j].length(), bound);
+                    maxWidth = Math.max(maxWidth, bound.right);
+                    textHeight = bound.height();
+                }
+                bound.set((int) -stokeWidth / 2 + bound.left, 0, maxWidth + (int) stokeWidth
+                        , (int) (tag_in_line.length * textHeight * 1.5 + (contentWidth + contentHeight) / 200));
 
-            int maxWidth = 0;
-            int textHeight = 0;
-            String[] tag_in_line = tag.split("\n");
-            for (int j = 0; j < tag_in_line.length; j++) {
-                paint.getTextBounds(tag_in_line[j], 0, tag_in_line[j].length(), bound);
-                maxWidth = Math.max(maxWidth, bound.right);
-                textHeight = bound.height();
-            }
-            bound.set((int) -stokeWidth / 2 + bound.left, 0, maxWidth + (int) stokeWidth
-                    , (int) (tag_in_line.length * textHeight * 1.5 + (contentWidth + contentHeight) / 200));
-
-            int dx = (int) region.centerX()-bound.centerX();
-            int dy = (int) region.centerY()-bound.centerY();
-            bound.offset(dx, dy);
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(color);
-            canvas.drawRect(bound, paint);
-            int red = (paint.getColor()&0x00FF0000)>>16;
-            int green = (paint.getColor()&0x0000FF00)>>8;
-            int blue = (paint.getColor()&0x000000FF);
-            if(red + green +blue > 382)
-                paint.setColor(Color.BLACK);
-            else
-                paint.setColor(Color.WHITE);
-            for (int j = 0; j < tag_in_line.length; j++) {
-                canvas.drawText(tag_in_line[j], dx, dy + (j + 1) * textHeight * (float) 1.5, paint);
+                int dx = (int) region.centerX() - bound.centerX();
+                int dy = (int) region.centerY() - bound.centerY();
+                bound.offset(dx, dy);
+                paint.setStyle(Paint.Style.FILL);
+                paint.setColor(color);
+                canvas.drawRect(bound, paint);
+                int red = (paint.getColor() & 0x00FF0000) >> 16;
+                int green = (paint.getColor() & 0x0000FF00) >> 8;
+                int blue = (paint.getColor() & 0x000000FF);
+                if (red + green + blue > 382)
+                    paint.setColor(Color.BLACK);
+                else
+                    paint.setColor(Color.WHITE);
+                for (int j = 0; j < tag_in_line.length; j++) {
+                    canvas.drawText(tag_in_line[j], dx, dy + (j + 1) * textHeight * (float) 1.5, paint);
+                }
             }
         }
     }
-    
+
     public Rect subPicture(RectF rect){
         Rect sub = new Rect();
         float widthScale = mPicture.getWidth()/pictureRegion.width();
@@ -342,6 +338,19 @@ public class PictureView extends View {
         sub.set(pictureX,pictureY,pictureW,pictureH);
         return sub;
     }
+
+    public RectF subPicture(Rect rect){
+        RectF sub = new RectF();
+        float widthScale = pictureRegion.width()/mPicture.getWidth();
+        float heightScale = pictureRegion.height()/mPicture.getHeight();
+        float pictureX = rect.left * widthScale;
+        float pictureY = rect.top * heightScale;
+        float pictureW = rect.right* widthScale;
+        float pictureH = rect.bottom * heightScale;
+        sub.set(pictureX,pictureY,pictureW,pictureH);
+        return sub;
+    }
+
     public int getMode() {
         return mode;
     }
@@ -375,6 +384,12 @@ public class PictureView extends View {
         return null;
     }
 
+    public void clearRectList(){
+        tagRectList.clear();
+    }
+    public void clearVectorList(){
+        tagVectorList.clear();
+    }
     public void setTagVector(int type, String text, RectF vector, int color) {
         for (int i = 0;i < tagVectorList.size(); i++){
             if (tagVectorList.get(i).getType() == type){

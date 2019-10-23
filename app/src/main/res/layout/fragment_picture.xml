@@ -19,6 +19,7 @@
             android:layout_marginLeft="5dp"
             android:layout_marginTop="5dp"
             android:layout_marginRight="5dp"
+            android:layout_marginBottom="5dp"
             android:layout_weight="0.7" />
 
 
@@ -40,22 +41,17 @@
                     android:text="Play" />
 
                 <Button
-                    android:id="@+id/select_template"
+                    android:id="@+id/set_template"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="SELECT TEMPLATE" />
+                    android:text="Set Template" />
 
                 <Button
-                    android:id="@+id/start_monitor"
+                    android:id="@+id/clear_template"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="START MONITOR" />
+                    android:text="Clear Template" />
 
-                <Button
-                    android:id="@+id/stop_monitor"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="STOP_MONITOR" />
             </LinearLayout>
         </ScrollView>
     </LinearLayout>

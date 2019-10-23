@@ -28,14 +28,10 @@ public class InternetTCPService {
     public static final int MESSAGE_INVALIDATE = 0;
     public static final int MESSAGE_IMAGE = 1;
     public static final int MESSAGE_TOAST = 2;
-    public static final int MESSAGE_SET_TO_CONNECT = 3;
-    public static final int MESSAGE_SET_CONNECTING =4;
-    public static final int MESSAGE_SET_CONNECTED = 5;
 
     private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
     private final int SERVER_HOST_PORT = 9999;
-    private final byte[] AA = {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x01,(byte)0x80};
-    private final byte[] FIRST_BYTE = Util.BytesConcact("GgRd:".getBytes(),AA);
+
     public Handler mHandler;
     public ConnectedThread mConnectedThread;
 
@@ -58,8 +54,8 @@ public class InternetTCPService {
             }
         });
     }
+
     public void interact(byte[] send){
-        // If there are paired devices, add each one to the ArrayAdapter
         new Thread(new ConnectThread(send)).start();
     }
 
@@ -67,46 +63,53 @@ public class InternetTCPService {
     private class ConnectThread extends Thread {
         private Socket socket;
         private byte[] mSend;
+
         public ConnectThread(byte[] send) {
             mSend = send;
-            mState = STATE_CONNECTING;
-//            Message msg = mHandler.obtainMessage(MESSAGE_SET_CONNECTING);
-//            mHandler.sendMessage(msg);
         }
 
         public void run() {
-            try{
-                socket = new Socket();
-                socket.connect(new InetSocketAddress(SERVER_HOST_IP, SERVER_HOST_PORT), 2000);
-            } catch (UnknownHostException e) {
-                popMessage("Unknown host exception: " + e.toString());
-                try {
-                    socket.close();
-                    socket = null;
-                } catch (IOException e2) {
-                    popMessage("unable to close() socket during connection failure: "+e2.getMessage()+"\n");
-                    socket = null;
+            for (int i = 0; i < 20; i++) {
+                if (mState == STATE_NONE) {
+                    mState = STATE_CONNECTING;
+                    try {
+                        socket = new Socket();
+                        socket.connect(new InetSocketAddress(SERVER_HOST_IP, SERVER_HOST_PORT), 2000);
+                    } catch (UnknownHostException e) {
+                        popMessage("Unknown host exception: " + e.toString());
+                        try {
+                            socket.close();
+                            socket = null;
+                        } catch (IOException e2) {
+                            popMessage("unable to close() socket during connection failure: " + e2.getMessage() + "\n");
+                            socket = null;
+                        }
+                    } catch (IOException e) {
+                        popMessage("IO exception: " + e.toString());
+                        socket = null;
+                    } catch (SecurityException e) {
+                        popMessage("Security exception: " + e.toString());
+                        try {
+                            socket.close();
+                            socket = null;
+                        } catch (IOException e2) {
+                            popMessage("unable to close() socket during connection failure: " + e2.getMessage() + "\n");
+                            socket = null;
+                        }
+                        socket = null;
+                    }
+                    if (socket != null) {
+                        new Thread(new ConnectedThread(socket, mSend)).start();
+                    } else {
+                        mState = STATE_NONE;
+                    }
+                    break;
                 }
-            } catch (IOException e) {
-                popMessage( "IO exception: " + e.toString());
-                socket = null;
-            }catch (SecurityException e) {
-                popMessage( "Security exception: " + e.toString());
                 try {
-                    socket.close();
-                    socket = null;
-                } catch (IOException e2) {
-                    popMessage("unable to close() socket during connection failure: "+e2.getMessage()+"\n");
-                    socket = null;
+                    sleep(50);
+                }catch (Exception e){
+                    e.printStackTrace();
                 }
-                socket = null;
-            }
-            if (socket != null) {
-                new Thread(new ConnectedThread(socket,mSend)).start();
-            } else {
-                mState = STATE_NONE;
-//                Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
-//                mHandler.sendMessage(msg1);
             }
         }
     }
@@ -132,6 +135,10 @@ public class InternetTCPService {
 
         private static final byte SC_DATA = (byte)0x80;
         private static final byte SC_IMAGE = (byte)0x81;
+        private static final byte SC_ST_TEMPLATE = (byte)0x82;
+
+        private final byte[] END = {0x01,0x00,0x00,0x00,(byte)0x81};
+        private final byte[] END_CODE = Util.BytesConcat(HEAD, END);
 
         public ConnectedThread(Socket socket, byte[] send) {
             mSend = send;
@@ -146,6 +153,7 @@ public class InternetTCPService {
             data_buffer = new byte[0];
             data_len = 0;
             received_len = 0;
+
             try {
                 tmpIn = socket.getInputStream();
                 tmpOut = socket.getOutputStream();
@@ -156,9 +164,6 @@ public class InternetTCPService {
             mmInStream = tmpIn;
             mmOutStream = tmpOut;
             mState = STATE_CONNECTED;
-//            Message msg = mHandler.obtainMessage(MESSAGE_SET_CONNECTED);
-//            mHandler.sendMessage(msg);
-
         }
 
         public void run() {
@@ -176,9 +181,6 @@ public class InternetTCPService {
                 } catch (IOException e) {
                     popMessage("已失去连接");
                     mState = STATE_NONE;
-//                    Message msg1 = mHandler.obtainMessage(MESSAGE_SET_TO_CONNECT);
-//                    mHandler.sendMessage(msg1);
-                    break;
                 }
 
             }
@@ -189,51 +191,52 @@ public class InternetTCPService {
                 mmOutStream.write(buffer);
             } catch (IOException e) {
                 popMessage("写操作出现异常");
+                mState = STATE_NONE;
             }
         }
 
         public void cancel() {
             try {
-                mmSocket.close();
                 mState = STATE_NONE;
+                mmSocket.close();
             } catch (IOException e) {
                 popMessage("关闭套接字失败");
             }
         }
 
         public void handleTCPPack(byte state_code,byte[] pack) {
-            switch(state_code){
-                case SC_DATA:
-                    int len = Util.Bytes2Int(Util.BytesSub(pack,0,4));
-                    long[] time = new long[len];
-                    double[] value = new double[len];
-                    for(int i = 0; i < len; i++){
-                        time[i] =
-                                Util.Bytes2Long(Util.BytesSub(pack,i * 16 + 4, i * 16 + 12));
-                        value[i] =
-                                Util.Bytes2Double(Util.BytesSub(pack,i * 16 + 12, i * 16 + 20));
-////                        popMessage("capture_time:" +  String.valueOf(capture_time));
-////                        popMessage("value:" +  String.valueOf(value));
-
-                    }
-                    Message msg = mHandler.obtainMessage(MESSAGE_INVALIDATE);
-                    Bundle b = new Bundle();
-                    b.putLongArray("time",time);
-                    b.putDoubleArray("value",value);
-                    msg.setData(b);
-                    mHandler.sendMessage(msg);
-                    break;
-                case SC_IMAGE:
-                    byte[] image = Util.BytesSub(pack,6,pack.length);
-                    Message msg1 = mHandler.obtainMessage(MESSAGE_IMAGE);
-                    msg1.obj = image;
-                    mHandler.sendMessage(msg1);
-                default:
+            if(state_code == SC_DATA){
+                int channels = Util.Bytes2Int(Util.BytesSub(pack,0,4));
+                double[] value = new double[channels];
+                for(int i = 0; i < channels; i++){
+                    value[i] =
+                            Util.Bytes2Double(Util.BytesSub(pack,i * 8 + 4, i * 8 + 12));
+                }
+                Message msg = mHandler.obtainMessage(MESSAGE_INVALIDATE);
+                Bundle b = new Bundle();
+                b.putDoubleArray("value",value);
+                msg.setData(b);
+                mHandler.sendMessage(msg);
+            }else if(state_code == SC_IMAGE){
+                int channels = Util.Bytes2Int(Util.BytesSub(pack,0,4));
+                double[] value = new double[channels];
+                int i = 0;
+                for(; i < channels; i++){
+                    value[i] =
+                            Util.Bytes2Double(Util.BytesSub(pack,i * 8 + 4, i * 8 + 12));
+                }
+                byte[] image = Util.BytesSub(pack,i * 8 + 10,pack.length);
+                Message msg1 = mHandler.obtainMessage(MESSAGE_IMAGE);
+                msg1.obj = image;
+                Bundle b = new Bundle();
+                b.putDoubleArray("value",value);
+                msg1.setData(b);
+                mHandler.sendMessage(msg1);
             }
         }
 
         private synchronized boolean handleData(byte[] data) {
-            data = Util.BytesConcact(bytes_buffer, data);
+            data = Util.BytesConcat(bytes_buffer, data);
             // 状态机 获取帧头后，将帧传送给handle_udp_data(data)处理
             bytes_buffer = new byte[1];
             while(bytes_buffer.length != 0) {
@@ -249,9 +252,7 @@ public class InternetTCPService {
                     }
                 } else if (state == READ_LEN) {
                     byte[] len_byte = Util.BytesSub(data,0,4);
-                    for (int i = 0; i < 4; i++) {
-                        data_len = (data_len << 8) + (len_byte[i]&0xFF);
-                    }
+                    data_len = Util.Bytes2Int(len_byte);
                     bytes_buffer = Util.BytesSub(data,4,data.length);
                     data = Util.BytesSub(data,4,data.length);
                     data_buffer = new byte[0];
@@ -261,15 +262,15 @@ public class InternetTCPService {
                     received_len = received_len + data.length;
                     if (received_len < data_len) {
                         bytes_buffer = new byte[0];
-                        data_buffer = Util.BytesConcact(data_buffer, data);
+                        data_buffer = Util.BytesConcat(data_buffer, data);
                         state = READ_DATA;
                     } else {
                         bytes_buffer = Util.BytesSub(data,data_len - received_len + data.length, data.length);
-                        data_buffer = Util.BytesConcact(data_buffer,
+                        data_buffer = Util.BytesConcat(data_buffer,
                                 Util.BytesSub(data,0, data_len - received_len + data.length));
                         state = FIND_HEAD;
-                        cancel();
                         handleTCPPack(data_buffer[0], Util.BytesSub(data_buffer,1,data_buffer.length));
+                        cancel();
                         return true;
                     }
                 }

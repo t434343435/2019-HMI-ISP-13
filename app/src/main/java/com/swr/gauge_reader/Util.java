@@ -35,7 +35,7 @@ public class Util {
     public static int Bytes2Int(byte[] bytes){
         int res = 0;
         for (int i = 0; i < 4; i++) {
-            res = (res << 8) + (bytes[i]&0xFF);
+            res |= ((int) (bytes[i] & 0xff)) << (8 * i);
         }
         return res;
     }
@@ -47,7 +47,7 @@ public class Util {
         return res;
     }
 
-    public static byte[] BytesConcact(byte[] bytes1, byte[] bytes2){
+    public static byte[] BytesConcat(byte[] bytes1, byte[] bytes2){
         byte[] res = new byte[bytes1.length + bytes2.length];
         for(int i = 0; i < bytes1.length; i++)
             res[i] = bytes1[i];
@@ -56,6 +56,22 @@ public class Util {
         return res;
     }
 
+    public static double[] DoublesConcat(double[] doubles1, double doubles2){
+        double[] res = new double[doubles1.length + 1];
+        for(int i = 0; i < doubles1.length; i++)
+            res[i] = doubles1[i];
+        res[doubles1.length] = doubles2;
+        return res;
+    }
+
+    public static long[] LongsConcat(long[] longs1, long longs2){
+        long[] res = new long[longs1.length + 1];
+        for(int i = 0; i < longs1.length; i++)
+            res[i] = longs1[i];
+        res[longs1.length] = longs2;
+        return res;
+    }
+    
     public static int BytesFind(byte[] bytes, byte[] bytestofind){
         for (int i = 0; i < bytes.length; i++) {
             int j = 0;
