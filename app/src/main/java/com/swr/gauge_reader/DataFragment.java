@@ -93,7 +93,7 @@ public class DataFragment extends Fragment {
         // Inflate the layout for this fragment
         final View mDataFragmentView = inflater.inflate(R.layout.fragment_data, container, false);
         mSpinner = mDataFragmentView.findViewById(R.id.spinner);
-        final String[] spinnerItems = {"张三","李四","王二麻子"};
+        final String[] spinnerItems = {"Name","Gauge"};
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getContext(), R.layout.item_select, spinnerItems);
         arrayAdapter.setDropDownViewResource(R.layout.item_drop);
         mSpinner.setAdapter(arrayAdapter);
