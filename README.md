@@ -1,2 +1,5 @@
 # 2019-HMI-ISP-13
 基于OpenCV的表盘识别与监控系统设计
+其中python程序文件夹中的readerclient.py文件为摄像头客户端程序，process_server.py为图像处理的服务器端程序
+报告中为开题报告和答辩报告及演示视频
+整个代码的目录为安卓客户端程序
