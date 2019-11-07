@@ -90,21 +90,12 @@
                         android:text="Capture" />
                 </LinearLayout>
 
-                <LinearLayout
+                <Button
+                    android:id="@+id/clear"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:orientation="horizontal">
-
-
-                    <Button
-                        android:id="@+id/delete_wave"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Delete" />
-
-                </LinearLayout>
+                    android:text="Clear" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -119,6 +110,22 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Save" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+
+                    <Button
+                        android:id="@+id/delete_wave"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Delete" />
 
                     <Button
                         android:id="@+id/historical_data"

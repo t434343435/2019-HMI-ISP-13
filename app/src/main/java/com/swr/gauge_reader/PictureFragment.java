@@ -47,7 +47,8 @@ public class PictureFragment extends Fragment{
     public int mPlayButtonState;
 
     public static final String MSG_SET_TPL = "SET_TEMPLATE";
-    
+    public static final String MSG_SET_NAME = "SET_NAME";
+
     public PictureView mPictureView;
     public Button setTemplateButton;
     public Button clearTemplateButton;
@@ -98,11 +99,14 @@ public class PictureFragment extends Fragment{
             public void onClick(View v) {
                 Bundle b = new Bundle();
                 int size = templateVariables.size();
+                String [] sl = new String[size];
                 byte [] bytes =  Util.Int2Bytes(size);
                 for(int i = 0; i < size; i++){
                     bytes = Util.BytesConcat(bytes, templateVariables.get(i).getBytes());
+                    sl[i] = templateVariables.get(i).name;
                 }
                 b.putByteArray(MSG_SET_TPL, bytes);
+                b.putStringArray(MSG_SET_NAME, sl);
                 onInteract(SET_TEMPLATE, b);
             }
         });
@@ -144,12 +148,7 @@ public class PictureFragment extends Fragment{
                         final View dialogView = LayoutInflater.from(getContext())
                                 .inflate(R.layout.template_set_up,null);
                         final PictureView pictureView = dialogView.findViewById(R.id.picture);
-                        final EditText gaugeMaxEdit = dialogView.findViewById(R.id.gauge_max_edit);
-                        final EditText gaugeMinEdit = dialogView.findViewById(R.id.gauge_min_edit);
                         final EditText gaugeNameEdit = dialogView.findViewById(R.id.gauge_name_edit);
-                        final EditText gaugeMaxThEdit = dialogView.findViewById(R.id.max_threshold_edit);
-                        final EditText gaugeMinThEdit = dialogView.findViewById(R.id.min_threshold_edit);
-
                         final RadioButton gaugeMinButton = dialogView.findViewById(R.id.gauge_min_button);
                         final RadioButton gaugeMaxButton = dialogView.findViewById(R.id.gauge_max_button);
 
@@ -183,45 +182,12 @@ public class PictureFragment extends Fragment{
                             @Override
                             public void onClick(View v) {
                                 String name = gaugeNameEdit.getText().toString();
-                                String gaugeMin = gaugeMinEdit.getText().toString();
-                                String gaugeMax = gaugeMaxEdit.getText().toString();
-                                String gaugeThMin = gaugeMinThEdit.getText().toString();
-                                String gaugeThMax = gaugeMaxThEdit.getText().toString();
                                 if(name.length() == 0){
                                     toastMessage("Name cannot be null!");
                                     return;
                                 }
-                                if(gaugeMin.length() == 0){
-                                    toastMessage("Gauge minimum value cannot be null!");
-                                    return;
-                                }
-                                if(gaugeMax.length() == 0){
-                                    toastMessage("Gauge maximum value cannot be null!");
-                                    return;
-                                }
-                                if(gaugeThMin.length() == 0){
-                                    toastMessage("Gauge minimum threshold cannot be null!");
-                                    return;
-                                }
-                                if(gaugeThMax.length() == 0){
-                                    toastMessage("Gauge maximum threshold cannot be null!");
-                                    return;
-                                }
-                                double min = Double.parseDouble(gaugeMin);
-                                double max = Double.parseDouble(gaugeMax);
-                                double minTh = Double.parseDouble(gaugeThMin);
-                                double maxTh = Double.parseDouble(gaugeThMax);
-                                if(min > max){
-                                    toastMessage("Gauge minimum value must be less than Gauge maximum value!");
-                                    return;
-                                }
-
                                 TemplateVariable tv = new TemplateVariable();
                                 tv.name =  name;
-                                tv.min =  min;
-                                tv.max =  max;
-                                tv.min_threshold =  minTh;
-                                tv.max_threshold =  maxTh;
                                 tv.region = new Rect(pictureRect);
                                 tv.region_in_pic = new RectF(selectedRect);
                                 PictureView.TagVector minTagVector;

@@ -49,11 +49,13 @@ public class DataFragment extends Fragment {
     public Button mHistoricalDataButton;
     public Button mSaveDataButton;
     public Button mCaptureButton;
+    public Button mClearButton;
     public Spinner mSpinner;
     public int captureButtonState;
     public static final int STATE_IDLE = 0;
     public static final int STATE_CONTI = 1;
 
+    public int dataIndex = 0;
     File[] files;
     ArrayList<Integer> yourChoices = new ArrayList<>();
     ArrayList<Integer> matchChoices = new ArrayList<>();
@@ -93,21 +95,6 @@ public class DataFragment extends Fragment {
         // Inflate the layout for this fragment
         final View mDataFragmentView = inflater.inflate(R.layout.fragment_data, container, false);
         mSpinner = mDataFragmentView.findViewById(R.id.spinner);
-        final String[] spinnerItems = {"Name","Gauge"};
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(getContext(), R.layout.item_select, spinnerItems);
-        arrayAdapter.setDropDownViewResource(R.layout.item_drop);
-        mSpinner.setAdapter(arrayAdapter);
-        mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                //选择列表项的操作
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-                //未选中时候的操作
-            }
-        });
         mDataView = mDataFragmentView.findViewById(R.id.dataview);
         mDeleteWaveButton = mDataFragmentView.findViewById(R.id.delete_wave);
         mDeleteWaveButton.setOnClickListener(new View.OnClickListener() {
@@ -250,6 +237,15 @@ public class DataFragment extends Fragment {
         });
 
         // set the save data button function
+        mClearButton = mDataFragmentView.findViewById(R.id.clear);
+        mClearButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mDataView.data = new double[0];
+                mDataView.time = new long[0];
+                mDataView.invalidate();
+            }
+        });
         mSaveDataButton = mDataFragmentView.findViewById(R.id.save_data);
         mSaveDataButton.setEnabled(false);
         mSaveDataButton.setOnClickListener(new View.OnClickListener() {

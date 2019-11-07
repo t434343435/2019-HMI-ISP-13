@@ -29,7 +29,7 @@ public class InternetTCPService {
     public static final int MESSAGE_IMAGE = 1;
     public static final int MESSAGE_TOAST = 2;
 
-    private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "106.54.219.89";
+    private final String SERVER_HOST_IP = "192.168.43.72";  //"192.168.43.72";  // "49.233.153.135";
     private final int SERVER_HOST_PORT = 9999;
 
     public Handler mHandler;
@@ -179,7 +179,7 @@ public class InternetTCPService {
                         data = Util.BytesSub(buffer,0,bytes);
                     handleData(data);
                 } catch (IOException e) {
-                    popMessage("已失去连接");
+//                    popMessage("已失去连接");
                     mState = STATE_NONE;
                 }
 

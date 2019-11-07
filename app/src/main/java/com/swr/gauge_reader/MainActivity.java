@@ -3,6 +3,7 @@ package com.swr.gauge_reader;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Picture;
 import android.graphics.RectF;
 import android.os.Bundle;
 import android.os.Message;
@@ -11,6 +12,9 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v7.app.AppCompatActivity;
 import android.text.method.ScrollingMovementMethod;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -90,28 +94,11 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
         log = findViewById(R.id.log);
         log.setMovementMethod(new ScrollingMovementMethod());
         mInternetTCPService = new InternetTCPService(this);
+        mInternetTCPService.interact(CLEAR_TEMPLATE_CODE);
 //        mInternetUDPService = new InternetUDPService(this);
 //        mInternetUDPService.connect();
     }
-    
-//    private void loadSharedPreference(){
-//        SharedPreferences userSettings = getSharedPreferences("options", 0);
-//
-//        dataView.gridX = userSettings.getInt("gridX",4);
-//        dataView.gridY = userSettings.getInt("gridY",3);
-//        dataView.style = userSettings.getInt("style ", dataView.STYLE_BLACK);
-//
-//    }
-//
-//    private void saveSharedPreference(){
-//        SharedPreferences userSettings = getSharedPreferences("options", 0);
-//        SharedPreferences.Editor editor = userSettings.edit();
-//
-//        editor.putInt("gridX", dataView.gridX);
-//        editor.putInt("gridY", dataView.gridY);
-//        editor.putInt("style ", dataView.style);
-//        editor.commit();
-//    }
+
     @Override
     public void onResume()
     {
@@ -119,12 +106,13 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
     }
     @Override
     public void onInternetTCPServiceInteraction(Message msg) {
+        final DataFragment dataFragment = ((DataFragment) mFragment.get(INDEX_DATA));
         Button mCaptureButton = ((DataFragment) mFragment.get(INDEX_DATA)).mCaptureButton;
-        Button mSaveDataButton = ((DataFragment) mFragment.get(INDEX_DATA)).mSaveDataButton;
-        DataView view = ((DataFragment) mFragment.get(INDEX_DATA)).mDataView;
+        Button mSaveDataButton = dataFragment.mSaveDataButton;
+        DataView view = dataFragment.mDataView;
         if (msg.what == InternetTCPService.MESSAGE_INVALIDATE) {
             double[] value = msg.getData().getDoubleArray("value");
-            view.data = Util.DoublesConcat(view.data, value[0]);
+            view.data = Util.DoublesConcat(view.data, value[dataFragment.dataIndex]);
             view.time = Util.LongsConcat(view.time, System.currentTimeMillis());
             mSaveDataButton.setEnabled(true);
             view.invalidate();
@@ -138,14 +126,15 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
             imgview.setPicture(bm);
             ArrayList<PictureView.TagRect> tgl = (ArrayList<PictureView.TagRect>)imgview.tagRectList;
             double[] value = msg.getData().getDoubleArray("value");
-            for(int i = 0; i < value.length; i++){
+            int len = tgl.size()>value.length?value.length:tgl.size();
+            for(int i = 0; i < len; i++){
                 float gc = fragment.getNeedleLength(i);
                 RectF vector = fragment.getGaugeCenter(i);
                 vector.right -= (float) Math.cos(value[i]*Math.PI/180)*gc;
                 vector.bottom -= (float) Math.sin(value[i]*Math.PI/180)*gc;
                 imgview.setTagVector(i,"",vector, Color.GREEN);
             }
-            for(int i = 0; i< value.length; i++){
+            for(int i = 0; i< len; i++){
                 tgl.get(i).setText(fragment.getGaugeName(i) + String.format(":%.2f",value[i]));
             }
             imgview.invalidate();
@@ -191,7 +180,24 @@ public class MainActivity extends AppCompatActivity implements DataFragment.OnDa
                 byte [] code = bundle.getByteArray(PictureFragment.MSG_SET_TPL);
                 code = Util.BytesConcat(SET_TEMPLATE,code);
                 byte [] head = Util.BytesConcat(HEAD,Util.Int2Bytes(code.length));
-                ((DataFragment) mFragment.get(INDEX_DATA)).waveList.clear();
+                final DataFragment dataFragment = ((DataFragment) mFragment.get(INDEX_DATA));
+                dataFragment.waveList.clear();
+                String [] spinnerItems = bundle.getStringArray(PictureFragment.MSG_SET_NAME);
+                ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, R.layout.item_select, spinnerItems);
+                arrayAdapter.setDropDownViewResource(R.layout.item_drop);
+                dataFragment.mSpinner.setAdapter(arrayAdapter);
+                dataFragment.mSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                    @Override
+                    public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                        //选择列表项的操作
+                        dataFragment.dataIndex = position;
+                    }
+
+                    @Override
+                    public void onNothingSelected(AdapterView<?> parent) {
+                        //未选中时候的操作
+                    }
+                });
                 mInternetTCPService.interact(Util.BytesConcat(head,code));
             }
         }else if(state_code == PictureFragment.CLEAR_TEMPLATE) {

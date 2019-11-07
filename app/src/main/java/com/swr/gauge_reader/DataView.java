@@ -286,7 +286,7 @@ public class DataView extends View {
             paint.setTextSize(mTextSize);
             paint.setColor(Color.BLACK);
             paint.setColor(Color.RED);
-            canvas.drawText("未捕获波形",mContentWidth/2-(float)2.7*mTextSize,
+            canvas.drawText("No data!",mContentWidth/2-(float)2.7*mTextSize,
                     mContentHeight/2,paint);
 
         }
@@ -332,7 +332,7 @@ public class DataView extends View {
         }
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Date date = new Date(time[capturedX]);
-        canvas.drawText("time:" + "["+time[capturedX]+"]"+sdf.format(date) ,
+        canvas.drawText("time:" +sdf.format(date) ,
                 (float)(mTextSize*0.5), (float)(mContentHeight - mTextSize*3),paint);
     }
     void calculateValue(Canvas canvas){
